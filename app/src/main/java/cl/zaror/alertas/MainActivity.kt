@@ -9,10 +9,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -55,10 +57,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AlertasApp(viewModel: AlertasViewModel) {
-    var pantallaActual by remember {
-        mutableStateOf("Inicio")
-    }
-
+    var pantallaActual by remember { mutableStateOf("Inicio") }
     val alertas by viewModel.alertas.collectAsState()
 
     Scaffold(
@@ -69,24 +68,15 @@ fun AlertasApp(viewModel: AlertasViewModel) {
                     .padding(8.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                BotonNavegacion(
-                    texto = "Inicio",
-                    seleccionado = pantallaActual == "Inicio"
-                ) {
+                BotonNavegacion("Inicio", pantallaActual == "Inicio") {
                     pantallaActual = "Inicio"
                 }
 
-                BotonNavegacion(
-                    texto = "Alertas",
-                    seleccionado = pantallaActual == "Alertas"
-                ) {
+                BotonNavegacion("Alertas", pantallaActual == "Alertas") {
                     pantallaActual = "Alertas"
                 }
 
-                BotonNavegacion(
-                    texto = "Nueva",
-                    seleccionado = pantallaActual == "Nueva"
-                ) {
+                BotonNavegacion("Nueva", pantallaActual == "Nueva") {
                     pantallaActual = "Nueva"
                 }
             }
@@ -100,42 +90,36 @@ fun AlertasApp(viewModel: AlertasViewModel) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             when (pantallaActual) {
-                "Inicio" -> {
-                    PantallaInicio()
-                }
+                "Inicio" -> PantallaInicio()
 
-                "Alertas" -> {
-                    PantallaAlertas(
-                        alertas = alertas,
-                        onAtender = { id ->
-                            viewModel.marcarComoAtendida(id)
-                        },
-                        onEliminar = { id ->
-                            viewModel.eliminarAlerta(id)
-                        }
-                    )
-                }
+                "Alertas" -> PantallaAlertas(
+                    alertas = alertas,
+                    onAtender = { id ->
+                        viewModel.marcarComoAtendida(id)
+                    },
+                    onEliminar = { id ->
+                        viewModel.eliminarAlerta(id)
+                    }
+                )
 
-                "Nueva" -> {
-                    NuevaAlertaScreen(
-                        onRegistrar = {
-                                tipo,
-                                descripcion,
-                                ubicacion,
-                                reportadaPor ->
+                "Nueva" -> NuevaAlertaScreen(
+                    onRegistrar = {
+                            tipo,
+                            descripcion,
+                            ubicacion,
+                            reportadaPor ->
 
-                            val nuevaAlerta = Alerta(
-                                tipo = tipo,
-                                descripcion = descripcion,
-                                ubicacion = ubicacion,
-                                reportadaPor = reportadaPor
-                            )
+                        val nuevaAlerta = Alerta(
+                            tipo = tipo,
+                            descripcion = descripcion,
+                            ubicacion = ubicacion,
+                            reportadaPor = reportadaPor
+                        )
 
-                            viewModel.guardarAlerta(nuevaAlerta)
-                            pantallaActual = "Alertas"
-                        }
-                    )
-                }
+                        viewModel.guardarAlerta(nuevaAlerta)
+                        pantallaActual = "Alertas"
+                    }
+                )
             }
         }
     }
@@ -184,6 +168,10 @@ fun PantallaAlertas(
     onAtender: (Int) -> Unit,
     onEliminar: (Int) -> Unit
 ) {
+    var alertaPendienteEliminar by remember {
+        mutableStateOf<Alerta?>(null)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -211,25 +199,10 @@ fun PantallaAlertas(
                         style = MaterialTheme.typography.titleMedium
                     )
 
-                    Text(
-                        text = "Descripción: ${alerta.descripcion}",
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-
-                    Text(
-                        text = "Ubicación: ${alerta.ubicacion}",
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-
-                    Text(
-                        text = "Reportada por: ${alerta.reportadaPor}",
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-
-                    Text(
-                        text = "Estado: ${alerta.estado}",
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
+                    Text("Descripción: ${alerta.descripcion}")
+                    Text("Ubicación: ${alerta.ubicacion}")
+                    Text("Reportada por: ${alerta.reportadaPor}")
+                    Text("Estado: ${alerta.estado}")
 
                     if (alerta.estado == "Activa") {
                         Button(
@@ -238,20 +211,53 @@ fun PantallaAlertas(
                             },
                             modifier = Modifier.padding(top = 8.dp)
                         ) {
-                            Text(text = "Marcar como atendida")
+                            Text("Marcar como atendida")
                         }
                     }
 
                     Button(
                         onClick = {
-                            onEliminar(alerta.id)
+                            alertaPendienteEliminar = alerta
                         },
                         modifier = Modifier.padding(top = 8.dp)
                     ) {
-                        Text(text = "Eliminar alerta")
+                        Text("Eliminar alerta")
                     }
                 }
             }
         }
+    }
+
+    alertaPendienteEliminar?.let { alerta ->
+        AlertDialog(
+            onDismissRequest = {
+                alertaPendienteEliminar = null
+            },
+            title = {
+                Text("Confirmar eliminación")
+            },
+            text = {
+                Text("¿Seguro que deseas eliminar esta alerta?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onEliminar(alerta.id)
+                        alertaPendienteEliminar = null
+                    }
+                ) {
+                    Text("Confirmar")
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        alertaPendienteEliminar = null
+                    }
+                ) {
+                    Text("Cancelar")
+                }
+            }
+        )
     }
 }
