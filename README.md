@@ -24,7 +24,7 @@ https://github.com/Dia1208/AlertasZaror1.0
 
 ## Seguimiento
 
-El avance del proyecto se registra en Trello mediante tareas, responsables y estados.
+El avance del proyecto se registra en GitHub mediante Issues y GitHub Projects, con tareas, responsables y estados.
 
 ## Estado actual
 
