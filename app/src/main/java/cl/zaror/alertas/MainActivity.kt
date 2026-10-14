@@ -108,7 +108,12 @@ fun AlertasApp(viewModel: AlertasViewModel) {
                 }
 
                 "Alertas" -> {
-                    PantallaAlertas(alertas)
+                    PantallaAlertas(
+                        alertas = alertas,
+                        onAtender = { id ->
+                            viewModel.marcarComoAtendida(id)
+                        }
+                    )
                 }
 
                 "Nueva" -> {
@@ -174,7 +179,10 @@ fun PantallaInicio() {
 }
 
 @Composable
-fun PantallaAlertas(alertas: List<Alerta>) {
+fun PantallaAlertas(
+    alertas: List<Alerta>,
+    onAtender: (Int) -> Unit
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -221,6 +229,17 @@ fun PantallaAlertas(alertas: List<Alerta>) {
                         text = "Estado: ${alerta.estado}",
                         modifier = Modifier.padding(top = 4.dp)
                     )
+
+                    if (alerta.estado == "Activa") {
+                        Button(
+                            onClick = {
+                                onAtender(alerta.id)
+                            },
+                            modifier = Modifier.padding(top = 8.dp)
+                        ) {
+                            Text(text = "Marcar como atendida")
+                        }
+                    }
                 }
             }
         }
