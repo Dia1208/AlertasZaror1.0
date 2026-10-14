@@ -4,39 +4,25 @@ import android.content.Context
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.widget.Toast
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Place
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Icon
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import cl.zaror.alertas.domain.Validaciones
+import cl.zaror.alertas.ui.components.CampoTexto
+import cl.zaror.alertas.ui.components.SelectorChips
 
 @Composable
 fun NuevaAlertaScreen(
-    onRegistrar: (
-        String,
-        String,
-        String,
-        String,
-        String?
-    ) -> Unit
+    onRegistrar: (String, String, String, String, String?) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -53,86 +39,42 @@ fun NuevaAlertaScreen(
 
     val selectorFoto = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
-    ) { uri ->
-        fotoUri = uri?.toString()
-    }
+    ) { uri -> fotoUri = uri?.toString() }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(24.dp)
+            .verticalScroll(rememberScrollState())
+            .padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(
-            text = "Registrar nueva alerta",
-            style = MaterialTheme.typography.headlineSmall
-        )
+        Text("Registrar nueva alerta", style = MaterialTheme.typography.headlineSmall)
 
-        Text(
-            text = "Tipo de alerta",
-            modifier = Modifier.padding(top = 16.dp)
-        )
-
-        listOf(
-            "Emergencia",
-            "Falla de alarma",
-            "Solicitud de apoyo"
-        ).forEach { opcion ->
-            Row {
-                RadioButton(
-                    selected = tipo == opcion,
-                    onClick = {
-                        tipo = opcion
-                        errorTipo = Validaciones.validarTipo(tipo)
-                    }
-                )
-                Text(
-                    text = opcion,
-                    modifier = Modifier.padding(top = 12.dp)
-                )
-            }
+        SelectorChips(
+            titulo = "Tipo de alerta",
+            opciones = listOf("Emergencia", "Falla de alarma", "Solicitud de apoyo"),
+            seleccionado = tipo,
+            error = errorTipo
+        ) { opcion ->
+            tipo = opcion
+            errorTipo = Validaciones.validarTipo(opcion)
         }
 
-        errorTipo?.let {
-            Text(
-                text = it,
-                color = MaterialTheme.colorScheme.error
-            )
-        }
-
-        OutlinedTextField(
-            value = descripcion,
-            onValueChange = {
-                descripcion = it
-                errorDescripcion = null
-            },
-            label = { Text("Descripción") },
-            leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
-            trailingIcon = { if (errorDescripcion != null) Icon(Icons.Default.Warning, contentDescription = "Error", tint = MaterialTheme.colorScheme.error) },
-            isError = errorDescripcion != null,
-            supportingText = {
-                errorDescripcion?.let { Text(it) }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 12.dp)
+        CampoTexto(
+            valor = descripcion,
+            onCambio = { descripcion = it; errorDescripcion = null },
+            etiqueta = "Descripción",
+            icono = Icons.Default.Edit,
+            error = errorDescripcion,
+            minLineas = 3
         )
 
-        OutlinedTextField(
-            value = ubicacion,
-            onValueChange = {
-                ubicacion = it
-                errorUbicacion = null
-            },
-            label = { Text("Ubicación de prueba") },
-            leadingIcon = { Icon(Icons.Default.Place, contentDescription = null) },
-            trailingIcon = { if (errorUbicacion != null) Icon(Icons.Default.Warning, contentDescription = "Error", tint = MaterialTheme.colorScheme.error) },
-            isError = errorUbicacion != null,
-            supportingText = {
-                errorUbicacion?.let { Text(it) }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 12.dp)
+        CampoTexto(
+            valor = ubicacion,
+            onCambio = { ubicacion = it; errorUbicacion = null },
+            etiqueta = "Ubicación de prueba",
+            icono = Icons.Default.Place,
+            error = errorUbicacion
         )
 
         OutlinedButton(
@@ -140,68 +82,45 @@ fun NuevaAlertaScreen(
                 ubicacion = "Ubicación ficticia: Block 3, casa 15"
                 errorUbicacion = null
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 12.dp)
+            modifier = Modifier.fillMaxWidth()
         ) {
+            Icon(Icons.Default.Place, null)
+            Spacer(Modifier.width(8.dp))
             Text("Usar ubicación ficticia")
         }
 
         OutlinedButton(
-            onClick = {
-                probarVibracion(context)
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp)
+            onClick = { probarVibracion(context) },
+            modifier = Modifier.fillMaxWidth()
         ) {
+            Icon(Icons.Default.NotificationsActive, null)
+            Spacer(Modifier.width(8.dp))
             Text("Probar vibración del dispositivo")
         }
 
-        OutlinedTextField(
-            value = reportadaPor,
-            onValueChange = {
-                reportadaPor = it
-                errorReportante = null
-            },
-            label = { Text("Reportada por") },
-            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
-            trailingIcon = { if (errorReportante != null) Icon(Icons.Default.Warning, contentDescription = "Error", tint = MaterialTheme.colorScheme.error) },
-            isError = errorReportante != null,
-            supportingText = {
-                errorReportante?.let { Text(it) }
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 12.dp)
+        CampoTexto(
+            valor = reportadaPor,
+            onCambio = { reportadaPor = it; errorReportante = null },
+            etiqueta = "Reportada por",
+            icono = Icons.Default.Person,
+            error = errorReportante
         )
 
         OutlinedButton(
-            onClick = {
-                selectorFoto.launch("image/*")
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 12.dp)
+            onClick = { selectorFoto.launch("image/*") },
+            modifier = Modifier.fillMaxWidth()
         ) {
-            Text(
-                if (fotoUri == null) {
-                    "Adjuntar foto opcional"
-                } else {
-                    "Foto seleccionada"
-                }
-            )
+            Icon(Icons.Default.AddAPhoto, null)
+            Spacer(Modifier.width(8.dp))
+            Text(if (fotoUri == null) "Adjuntar foto opcional" else "Foto seleccionada")
         }
 
         Button(
             onClick = {
                 errorTipo = Validaciones.validarTipo(tipo)
-                errorDescripcion =
-                    Validaciones.validarDescripcion(descripcion)
-                errorUbicacion =
-                    Validaciones.validarUbicacion(ubicacion)
-                errorReportante =
-                    Validaciones.validarReportante(reportadaPor)
+                errorDescripcion = Validaciones.validarDescripcion(descripcion)
+                errorUbicacion = Validaciones.validarUbicacion(ubicacion)
+                errorReportante = Validaciones.validarReportante(reportadaPor)
 
                 val formularioValido =
                     errorTipo == null &&
@@ -220,10 +139,10 @@ fun NuevaAlertaScreen(
                     )
                 }
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 20.dp)
+            modifier = Modifier.fillMaxWidth()
         ) {
+            Icon(Icons.Default.Check, null)
+            Spacer(Modifier.width(8.dp))
             Text("Registrar alerta")
         }
     }
@@ -241,21 +160,10 @@ private fun probarVibracion(context: Context) {
 
     if (vibrador?.hasVibrator() == true) {
         vibrador.vibrate(
-            VibrationEffect.createOneShot(
-                250,
-                VibrationEffect.DEFAULT_AMPLITUDE
-            )
+            VibrationEffect.createOneShot(250, VibrationEffect.DEFAULT_AMPLITUDE)
         )
-        Toast.makeText(
-            context,
-            "Prueba de vibración ejecutada",
-            Toast.LENGTH_SHORT
-        ).show()
+        Toast.makeText(context, "Prueba de vibración ejecutada", Toast.LENGTH_SHORT).show()
     } else {
-        Toast.makeText(
-            context,
-            "Este dispositivo no dispone de vibración",
-            Toast.LENGTH_SHORT
-        ).show()
+        Toast.makeText(context, "Este dispositivo no dispone de vibración", Toast.LENGTH_SHORT).show()
     }
 }
