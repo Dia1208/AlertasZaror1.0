@@ -1,49 +1,81 @@
 package cl.zaror.alertas.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import com.google.android.gms.location.LocationServices
 
 @Composable
 fun NuevaAlertaScreen(
     onRegistrar: (
-        tipo: String,
-        descripcion: String,
-        ubicacion: String,
-        reportadaPor: String
+        String,
+        String,
+        String,
+        String,
+        String?
     ) -> Unit
 ) {
+    val context = LocalContext.current
+    val clienteUbicacion =
+        remember { LocationServices.getFusedLocationProviderClient(context) }
+
     var tipo by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
     var ubicacion by remember { mutableStateOf("") }
     var reportadaPor by remember { mutableStateOf("") }
+    var fotoUri by remember { mutableStateOf<String?>(null) }
 
-    var errorTipo by remember { mutableStateOf("") }
-    var errorDescripcion by remember { mutableStateOf("") }
-    var errorUbicacion by remember { mutableStateOf("") }
-    var errorReportadaPor by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf("") }
+
+    val selectorFoto =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.GetContent()
+        ) {
+            fotoUri = it?.toString()
+        }
+
+    val permisoUbicacion =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { permisos ->
+            val permitido =
+                permisos[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                permisos[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+
+            if (permitido) {
+                clienteUbicacion.lastLocation.addOnSuccessListener { location ->
+                    if (location != null) {
+                        ubicacion =
+                            "${location.latitude}, ${location.longitude}"
+                    }
+                }
+            }
+        }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(24.dp)
     ) {
-        Text(text = "Registrar nueva alerta")
+        Text("Registrar nueva alerta")
 
         Text(
-            text = "Tipo de alerta",
+            "Tipo de alerta",
             modifier = Modifier.padding(top = 16.dp)
         )
 
@@ -57,98 +89,114 @@ fun NuevaAlertaScreen(
                     selected = tipo == opcion,
                     onClick = {
                         tipo = opcion
-                        errorTipo = ""
+                        error = ""
                     }
                 )
-
                 Text(
-                    text = opcion,
+                    opcion,
                     modifier = Modifier.padding(top = 12.dp)
                 )
             }
         }
 
-        if (errorTipo.isNotEmpty()) {
-            Text(text = errorTipo)
-        }
-
         OutlinedTextField(
             value = descripcion,
-            onValueChange = {
-                descripcion = it
-                errorDescripcion = ""
-            },
+            onValueChange = { descripcion = it },
             label = { Text("Descripción") },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp),
-            isError = errorDescripcion.isNotEmpty()
+                .padding(top = 12.dp)
         )
-
-        if (errorDescripcion.isNotEmpty()) {
-            Text(text = errorDescripcion)
-        }
 
         OutlinedTextField(
             value = ubicacion,
-            onValueChange = {
-                ubicacion = it
-                errorUbicacion = ""
-            },
-            label = { Text("Ubicación aproximada") },
+            onValueChange = { ubicacion = it },
+            label = { Text("Ubicación") },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp),
-            isError = errorUbicacion.isNotEmpty()
+                .padding(top = 12.dp)
         )
 
-        if (errorUbicacion.isNotEmpty()) {
-            Text(text = errorUbicacion)
+        OutlinedButton(
+            onClick = {
+                val tienePermiso =
+                    ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.ACCESS_FINE_LOCATION
+                    ) == PackageManager.PERMISSION_GRANTED
+
+                if (tienePermiso) {
+                    clienteUbicacion.lastLocation.addOnSuccessListener {
+                        if (it != null) {
+                            ubicacion =
+                                "${it.latitude}, ${it.longitude}"
+                        }
+                    }
+                } else {
+                    permisoUbicacion.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
+                }
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp)
+        ) {
+            Text("Obtener ubicación actual")
         }
 
         OutlinedTextField(
             value = reportadaPor,
-            onValueChange = {
-                reportadaPor = it
-                errorReportadaPor = ""
-            },
+            onValueChange = { reportadaPor = it },
             label = { Text("Reportada por") },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp),
-            isError = errorReportadaPor.isNotEmpty()
+                .padding(top = 12.dp)
         )
 
-        if (errorReportadaPor.isNotEmpty()) {
-            Text(text = errorReportadaPor)
+        OutlinedButton(
+            onClick = {
+                selectorFoto.launch("image/*")
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp)
+        ) {
+            Text(
+                if (fotoUri == null) {
+                    "Adjuntar foto opcional"
+                } else {
+                    "Foto seleccionada"
+                }
+            )
+        }
+
+        if (error.isNotEmpty()) {
+            Text(
+                error,
+                modifier = Modifier.padding(top = 8.dp)
+            )
         }
 
         Button(
             onClick = {
-                errorTipo =
-                    if (tipo.isBlank()) "Selecciona un tipo de alerta" else ""
-
-                errorDescripcion =
-                    if (descripcion.isBlank()) "Ingresa una descripción" else ""
-
-                errorUbicacion =
-                    if (ubicacion.isBlank()) "Ingresa una ubicación" else ""
-
-                errorReportadaPor =
-                    if (reportadaPor.isBlank()) "Ingresa quién reporta la alerta" else ""
-
-                val formularioValido =
-                    tipo.isNotBlank() &&
-                            descripcion.isNotBlank() &&
-                            ubicacion.isNotBlank() &&
-                            reportadaPor.isNotBlank()
-
-                if (formularioValido) {
+                if (
+                    tipo.isBlank() ||
+                    descripcion.isBlank() ||
+                    ubicacion.isBlank() ||
+                    reportadaPor.isBlank()
+                ) {
+                    error = "Completa todos los campos obligatorios"
+                } else {
                     onRegistrar(
                         tipo.trim(),
                         descripcion.trim(),
                         ubicacion.trim(),
-                        reportadaPor.trim()
+                        reportadaPor.trim(),
+                        fotoUri
                     )
                 }
             },
@@ -156,7 +204,7 @@ fun NuevaAlertaScreen(
                 .fillMaxWidth()
                 .padding(top = 20.dp)
         ) {
-            Text(text = "Registrar alerta")
+            Text("Registrar alerta")
         }
     }
 }
