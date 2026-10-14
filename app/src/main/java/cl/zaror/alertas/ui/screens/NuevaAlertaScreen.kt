@@ -4,6 +4,12 @@ import android.content.Context
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.widget.Toast
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.Icon
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
@@ -100,6 +106,8 @@ fun NuevaAlertaScreen(
                 errorDescripcion = null
             },
             label = { Text("Descripción") },
+            leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null) },
+            trailingIcon = { if (errorDescripcion != null) Icon(Icons.Default.Warning, contentDescription = "Error", tint = MaterialTheme.colorScheme.error) },
             isError = errorDescripcion != null,
             supportingText = {
                 errorDescripcion?.let { Text(it) }
@@ -116,6 +124,8 @@ fun NuevaAlertaScreen(
                 errorUbicacion = null
             },
             label = { Text("Ubicación de prueba") },
+            leadingIcon = { Icon(Icons.Default.Place, contentDescription = null) },
+            trailingIcon = { if (errorUbicacion != null) Icon(Icons.Default.Warning, contentDescription = "Error", tint = MaterialTheme.colorScheme.error) },
             isError = errorUbicacion != null,
             supportingText = {
                 errorUbicacion?.let { Text(it) }
@@ -155,6 +165,8 @@ fun NuevaAlertaScreen(
                 errorReportante = null
             },
             label = { Text("Reportada por") },
+            leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+            trailingIcon = { if (errorReportante != null) Icon(Icons.Default.Warning, contentDescription = "Error", tint = MaterialTheme.colorScheme.error) },
             isError = errorReportante != null,
             supportingText = {
                 errorReportante?.let { Text(it) }
@@ -198,6 +210,7 @@ fun NuevaAlertaScreen(
                     errorReportante == null
 
                 if (formularioValido) {
+                    vibrarAlRegistrar(context)
                     onRegistrar(
                         tipo.trim(),
                         descripcion.trim(),
@@ -213,6 +226,13 @@ fun NuevaAlertaScreen(
         ) {
             Text("Registrar alerta")
         }
+    }
+}
+
+private fun vibrarAlRegistrar(context: Context) {
+    val vibrador = context.getSystemService(Vibrator::class.java)
+    if (vibrador?.hasVibrator() == true) {
+        vibrador.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
     }
 }
 
