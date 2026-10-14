@@ -40,14 +40,14 @@ class MainActivity : ComponentActivity() {
         val repositorio = AlertasRepository(baseDatos.alertaDao())
         val factory = AlertasViewModelFactory(repositorio)
 
-        val alertasViewModel = ViewModelProvider(
+        val viewModel = ViewModelProvider(
             this,
             factory
         )[AlertasViewModel::class.java]
 
         setContent {
             AlertasZaror10Theme {
-                AlertasApp(alertasViewModel)
+                AlertasApp(viewModel)
             }
         }
     }
@@ -71,27 +71,24 @@ fun AlertasApp(viewModel: AlertasViewModel) {
             ) {
                 BotonNavegacion(
                     texto = "Inicio",
-                    seleccionado = pantallaActual == "Inicio",
-                    onClick = {
-                        pantallaActual = "Inicio"
-                    }
-                )
+                    seleccionado = pantallaActual == "Inicio"
+                ) {
+                    pantallaActual = "Inicio"
+                }
 
                 BotonNavegacion(
                     texto = "Alertas",
-                    seleccionado = pantallaActual == "Alertas",
-                    onClick = {
-                        pantallaActual = "Alertas"
-                    }
-                )
+                    seleccionado = pantallaActual == "Alertas"
+                ) {
+                    pantallaActual = "Alertas"
+                }
 
                 BotonNavegacion(
                     texto = "Nueva",
-                    seleccionado = pantallaActual == "Nueva",
-                    onClick = {
-                        pantallaActual = "Nueva"
-                    }
-                )
+                    seleccionado = pantallaActual == "Nueva"
+                ) {
+                    pantallaActual = "Nueva"
+                }
             }
         }
     ) { paddingValues ->
@@ -112,6 +109,9 @@ fun AlertasApp(viewModel: AlertasViewModel) {
                         alertas = alertas,
                         onAtender = { id ->
                             viewModel.marcarComoAtendida(id)
+                        },
+                        onEliminar = { id ->
+                            viewModel.eliminarAlerta(id)
                         }
                     )
                 }
@@ -181,7 +181,8 @@ fun PantallaInicio() {
 @Composable
 fun PantallaAlertas(
     alertas: List<Alerta>,
-    onAtender: (Int) -> Unit
+    onAtender: (Int) -> Unit,
+    onEliminar: (Int) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -239,6 +240,15 @@ fun PantallaAlertas(
                         ) {
                             Text(text = "Marcar como atendida")
                         }
+                    }
+
+                    Button(
+                        onClick = {
+                            onEliminar(alerta.id)
+                        },
+                        modifier = Modifier.padding(top = 8.dp)
+                    ) {
+                        Text(text = "Eliminar alerta")
                     }
                 }
             }
