@@ -23,8 +23,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
+import cl.zaror.alertas.data.Alerta
 import cl.zaror.alertas.data.AlertasRepository
 import cl.zaror.alertas.data.AppDatabase
+import cl.zaror.alertas.ui.screens.NuevaAlertaScreen
 import cl.zaror.alertas.ui.theme.AlertasZaror10Theme
 import cl.zaror.alertas.viewmodel.AlertasViewModel
 import cl.zaror.alertas.viewmodel.AlertasViewModelFactory
@@ -87,15 +89,31 @@ fun AlertasApp(viewModel: AlertasViewModel) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
-                .padding(24.dp),
+                .padding(paddingValues),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             when (pantallaActual) {
                 "Inicio" -> PantallaInicio()
-                "Alertas" -> PantallaAlertas(alertas.size)
-                "Nueva" -> PantallaNuevaAlerta()
+
+                "Alertas" -> PantallaAlertas(
+                    cantidadAlertas = alertas.size
+                )
+
+                "Nueva" -> NuevaAlertaScreen(
+                    onRegistrar = { tipo, descripcion, ubicacion, reportadaPor ->
+
+                        val nuevaAlerta = Alerta(
+                            tipo = tipo,
+                            descripcion = descripcion,
+                            ubicacion = ubicacion,
+                            reportadaPor = reportadaPor
+                        )
+
+                        viewModel.guardarAlerta(nuevaAlerta)
+                        pantallaActual = "Alertas"
+                    }
+                )
             }
         }
     }
@@ -136,19 +154,6 @@ fun PantallaAlertas(cantidadAlertas: Int) {
 
     Text(
         text = "Cantidad de alertas guardadas: $cantidadAlertas",
-        modifier = Modifier.padding(top = 12.dp)
-    )
-}
-
-@Composable
-fun PantallaNuevaAlerta() {
-    Text(
-        text = "Nueva alerta",
-        style = MaterialTheme.typography.headlineMedium
-    )
-
-    Text(
-        text = "Aquí construiremos el formulario para registrar una alerta.",
         modifier = Modifier.padding(top = 12.dp)
     )
 }
