@@ -7,38 +7,52 @@ class AlertasRepository(
     private val alertaDao: AlertaDao
 ) {
 
-    val alertas: Flow<List<Alerta>> =
-        alertaDao.observarTodas().map { lista ->
+    fun observarAlertas(): Flow<List<Alerta>> {
+        return alertaDao.observarTodas().map { lista ->
             lista.map { entidad ->
-                Alerta(
-                    id = entidad.id,
-                    tipo = entidad.tipo,
-                    descripcion = entidad.descripcion,
-                    ubicacion = entidad.ubicacion,
-                    fotoUri = entidad.fotoUri,
-                    estado = entidad.estado,
-                    fechaHora = entidad.fechaHora,
-                    reportadaPor = entidad.reportadaPor
-                )
+                entidad.toModelo()
             }
         }
+    }
 
-    suspend fun insertar(alerta: Alerta) {
-        alertaDao.insertar(
-            AlertaEntity(
-                id = alerta.id,
-                tipo = alerta.tipo,
-                descripcion = alerta.descripcion,
-                ubicacion = alerta.ubicacion,
-                fotoUri = alerta.fotoUri,
-                estado = alerta.estado,
-                fechaHora = alerta.fechaHora,
-                reportadaPor = alerta.reportadaPor
-            )
+    suspend fun guardarAlerta(alerta: Alerta) {
+        alertaDao.insertar(alerta.toEntidad())
+    }
+
+    suspend fun actualizarEstado(
+        id: Int,
+        nuevoEstado: String
+    ) {
+        alertaDao.actualizarEstado(id, nuevoEstado)
+    }
+
+    suspend fun eliminarAlerta(id: Int) {
+        alertaDao.eliminar(id)
+    }
+
+    private fun AlertaEntity.toModelo(): Alerta {
+        return Alerta(
+            id = id,
+            tipo = tipo,
+            descripcion = descripcion,
+            ubicacion = ubicacion,
+            fotoUri = fotoUri,
+            estado = estado,
+            fechaHora = fechaHora,
+            reportadaPor = reportadaPor
         )
     }
 
-    suspend fun marcarComoResuelta(id: Int) {
-        alertaDao.actualizarEstado(id, "Resuelta")
+    private fun Alerta.toEntidad(): AlertaEntity {
+        return AlertaEntity(
+            id = id,
+            tipo = tipo,
+            descripcion = descripcion,
+            ubicacion = ubicacion,
+            fotoUri = fotoUri,
+            estado = estado,
+            fechaHora = fechaHora,
+            reportadaPor = reportadaPor
+        )
     }
 }
