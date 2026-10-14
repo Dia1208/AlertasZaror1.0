@@ -30,6 +30,11 @@ fun NuevaAlertaScreen(
     var ubicacion by remember { mutableStateOf("") }
     var reportadaPor by remember { mutableStateOf("") }
 
+    var errorTipo by remember { mutableStateOf("") }
+    var errorDescripcion by remember { mutableStateOf("") }
+    var errorUbicacion by remember { mutableStateOf("") }
+    var errorReportadaPor by remember { mutableStateOf("") }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -50,7 +55,10 @@ fun NuevaAlertaScreen(
             Row {
                 RadioButton(
                     selected = tipo == opcion,
-                    onClick = { tipo = opcion }
+                    onClick = {
+                        tipo = opcion
+                        errorTipo = ""
+                    }
                 )
 
                 Text(
@@ -60,41 +68,89 @@ fun NuevaAlertaScreen(
             }
         }
 
+        if (errorTipo.isNotEmpty()) {
+            Text(text = errorTipo)
+        }
+
         OutlinedTextField(
             value = descripcion,
-            onValueChange = { descripcion = it },
+            onValueChange = {
+                descripcion = it
+                errorDescripcion = ""
+            },
             label = { Text("Descripción") },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp)
+                .padding(top = 12.dp),
+            isError = errorDescripcion.isNotEmpty()
         )
+
+        if (errorDescripcion.isNotEmpty()) {
+            Text(text = errorDescripcion)
+        }
 
         OutlinedTextField(
             value = ubicacion,
-            onValueChange = { ubicacion = it },
+            onValueChange = {
+                ubicacion = it
+                errorUbicacion = ""
+            },
             label = { Text("Ubicación aproximada") },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp)
+                .padding(top = 12.dp),
+            isError = errorUbicacion.isNotEmpty()
         )
+
+        if (errorUbicacion.isNotEmpty()) {
+            Text(text = errorUbicacion)
+        }
 
         OutlinedTextField(
             value = reportadaPor,
-            onValueChange = { reportadaPor = it },
+            onValueChange = {
+                reportadaPor = it
+                errorReportadaPor = ""
+            },
             label = { Text("Reportada por") },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 12.dp)
+                .padding(top = 12.dp),
+            isError = errorReportadaPor.isNotEmpty()
         )
+
+        if (errorReportadaPor.isNotEmpty()) {
+            Text(text = errorReportadaPor)
+        }
 
         Button(
             onClick = {
-                onRegistrar(
-                    tipo,
-                    descripcion,
-                    ubicacion,
-                    reportadaPor
-                )
+                errorTipo =
+                    if (tipo.isBlank()) "Selecciona un tipo de alerta" else ""
+
+                errorDescripcion =
+                    if (descripcion.isBlank()) "Ingresa una descripción" else ""
+
+                errorUbicacion =
+                    if (ubicacion.isBlank()) "Ingresa una ubicación" else ""
+
+                errorReportadaPor =
+                    if (reportadaPor.isBlank()) "Ingresa quién reporta la alerta" else ""
+
+                val formularioValido =
+                    tipo.isNotBlank() &&
+                            descripcion.isNotBlank() &&
+                            ubicacion.isNotBlank() &&
+                            reportadaPor.isNotBlank()
+
+                if (formularioValido) {
+                    onRegistrar(
+                        tipo.trim(),
+                        descripcion.trim(),
+                        ubicacion.trim(),
+                        reportadaPor.trim()
+                    )
+                }
             },
             modifier = Modifier
                 .fillMaxWidth()
