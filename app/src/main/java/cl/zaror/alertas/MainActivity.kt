@@ -34,6 +34,9 @@ import cl.zaror.alertas.ui.screens.NuevaAlertaScreen
 import cl.zaror.alertas.ui.theme.AlertasZaror10Theme
 import cl.zaror.alertas.viewmodel.AlertasViewModel
 import cl.zaror.alertas.viewmodel.AlertasViewModelFactory
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
@@ -238,6 +241,12 @@ fun PantallaAlertas(
                             text = "Estado: ${alerta.estado}"
                         )
 
+                        Text(
+                            text = "Registrada: ${
+                                formatearFechaHora(alerta.fechaHora)
+                            }"
+                        )
+
                         if (alerta.estado == "Activa") {
                             Button(
                                 onClick = {
@@ -295,4 +304,13 @@ fun PantallaAlertas(
             }
         )
     }
+}
+
+fun formatearFechaHora(fechaHora: Long): String {
+    val formato = SimpleDateFormat(
+        "dd/MM/yyyy HH:mm",
+        Locale.getDefault()
+    )
+
+    return formato.format(Date(fechaHora))
 }
