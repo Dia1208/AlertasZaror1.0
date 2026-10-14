@@ -55,7 +55,10 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AlertasApp(viewModel: AlertasViewModel) {
-    var pantallaActual by remember { mutableStateOf("Inicio") }
+    var pantallaActual by remember {
+        mutableStateOf("Inicio")
+    }
+
     val alertas by viewModel.alertas.collectAsState()
 
     Scaffold(
@@ -69,51 +72,65 @@ fun AlertasApp(viewModel: AlertasViewModel) {
                 BotonNavegacion(
                     texto = "Inicio",
                     seleccionado = pantallaActual == "Inicio",
-                    onClick = { pantallaActual = "Inicio" }
+                    onClick = {
+                        pantallaActual = "Inicio"
+                    }
                 )
 
                 BotonNavegacion(
                     texto = "Alertas",
                     seleccionado = pantallaActual == "Alertas",
-                    onClick = { pantallaActual = "Alertas" }
+                    onClick = {
+                        pantallaActual = "Alertas"
+                    }
                 )
 
                 BotonNavegacion(
                     texto = "Nueva",
                     seleccionado = pantallaActual == "Nueva",
-                    onClick = { pantallaActual = "Nueva" }
+                    onClick = {
+                        pantallaActual = "Nueva"
+                    }
                 )
             }
         }
     ) { paddingValues ->
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             when (pantallaActual) {
-                "Inicio" -> PantallaInicio()
+                "Inicio" -> {
+                    PantallaInicio()
+                }
 
-                "Alertas" -> PantallaAlertas(
-                    cantidadAlertas = alertas.size
-                )
+                "Alertas" -> {
+                    PantallaAlertas(alertas)
+                }
 
-                "Nueva" -> NuevaAlertaScreen(
-                    onRegistrar = { tipo, descripcion, ubicacion, reportadaPor ->
+                "Nueva" -> {
+                    NuevaAlertaScreen(
+                        onRegistrar = {
+                                tipo,
+                                descripcion,
+                                ubicacion,
+                                reportadaPor ->
 
-                        val nuevaAlerta = Alerta(
-                            tipo = tipo,
-                            descripcion = descripcion,
-                            ubicacion = ubicacion,
-                            reportadaPor = reportadaPor
-                        )
+                            val nuevaAlerta = Alerta(
+                                tipo = tipo,
+                                descripcion = descripcion,
+                                ubicacion = ubicacion,
+                                reportadaPor = reportadaPor
+                            )
 
-                        viewModel.guardarAlerta(nuevaAlerta)
-                        pantallaActual = "Alertas"
-                    }
-                )
+                            viewModel.guardarAlerta(nuevaAlerta)
+                            pantallaActual = "Alertas"
+                        }
+                    )
+                }
             }
         }
     }
@@ -127,33 +144,85 @@ fun BotonNavegacion(
 ) {
     Button(onClick = onClick) {
         Text(
-            text = if (seleccionado) "● $texto" else texto
+            text = if (seleccionado) {
+                "● $texto"
+            } else {
+                texto
+            }
         )
     }
 }
 
 @Composable
 fun PantallaInicio() {
-    Text(
-        text = "AlertasZaror1.0",
-        style = MaterialTheme.typography.headlineMedium
-    )
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = "AlertasZaror1.0",
+            style = MaterialTheme.typography.headlineMedium
+        )
 
-    Text(
-        text = "Sistema comunitario de alertas para la Junta de Vecinos Población Zaror.",
-        modifier = Modifier.padding(top = 12.dp)
-    )
+        Text(
+            text = "Sistema comunitario de alertas para la Junta de Vecinos Población Zaror.",
+            modifier = Modifier.padding(top = 12.dp)
+        )
+    }
 }
 
 @Composable
-fun PantallaAlertas(cantidadAlertas: Int) {
-    Text(
-        text = "Alertas registradas",
-        style = MaterialTheme.typography.headlineMedium
-    )
+fun PantallaAlertas(alertas: List<Alerta>) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Alertas registradas",
+            style = MaterialTheme.typography.headlineMedium
+        )
 
-    Text(
-        text = "Cantidad de alertas guardadas: $cantidadAlertas",
-        modifier = Modifier.padding(top = 12.dp)
-    )
+        if (alertas.isEmpty()) {
+            Text(
+                text = "Todavía no hay alertas registradas.",
+                modifier = Modifier.padding(top = 16.dp)
+            )
+        } else {
+            alertas.forEach { alerta ->
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 16.dp)
+                ) {
+                    Text(
+                        text = alerta.tipo,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+
+                    Text(
+                        text = "Descripción: ${alerta.descripcion}",
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+
+                    Text(
+                        text = "Ubicación: ${alerta.ubicacion}",
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+
+                    Text(
+                        text = "Reportada por: ${alerta.reportadaPor}",
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+
+                    Text(
+                        text = "Estado: ${alerta.estado}",
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+        }
+    }
 }
