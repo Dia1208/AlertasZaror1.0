@@ -12,15 +12,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
+    primary = androidx.compose.ui.graphics.Color(0xFFFF8A80),
+    secondary = androidx.compose.ui.graphics.Color(0xFF90CAF9),
+    tertiary = androidx.compose.ui.graphics.Color(0xFFA5D6A7)
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
+    primary = androidx.compose.ui.graphics.Color(0xFFC62828),
+    secondary = androidx.compose.ui.graphics.Color(0xFF1565C0),
+    tertiary = androidx.compose.ui.graphics.Color(0xFF2E7D32)
 
     /* Other default colors to override
     background = Color(0xFFFFFBFE),
@@ -37,7 +37,7 @@ private val LightColorScheme = lightColorScheme(
 fun AlertasZaror10Theme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
