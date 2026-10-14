@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
@@ -57,7 +59,10 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AlertasApp(viewModel: AlertasViewModel) {
-    var pantallaActual by remember { mutableStateOf("Inicio") }
+    var pantallaActual by remember {
+        mutableStateOf("Inicio")
+    }
+
     val alertas by viewModel.alertas.collectAsState()
 
     Scaffold(
@@ -68,15 +73,24 @@ fun AlertasApp(viewModel: AlertasViewModel) {
                     .padding(8.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                BotonNavegacion("Inicio", pantallaActual == "Inicio") {
+                BotonNavegacion(
+                    texto = "Inicio",
+                    seleccionado = pantallaActual == "Inicio"
+                ) {
                     pantallaActual = "Inicio"
                 }
 
-                BotonNavegacion("Alertas", pantallaActual == "Alertas") {
+                BotonNavegacion(
+                    texto = "Alertas",
+                    seleccionado = pantallaActual == "Alertas"
+                ) {
                     pantallaActual = "Alertas"
                 }
 
-                BotonNavegacion("Nueva", pantallaActual == "Nueva") {
+                BotonNavegacion(
+                    texto = "Nueva",
+                    seleccionado = pantallaActual == "Nueva"
+                ) {
                     pantallaActual = "Nueva"
                 }
             }
@@ -188,40 +202,61 @@ fun PantallaAlertas(
                 modifier = Modifier.padding(top = 16.dp)
             )
         } else {
-            alertas.forEach { alerta ->
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 16.dp)
-                ) {
-                    Text(
-                        text = alerta.tipo,
-                        style = MaterialTheme.typography.titleMedium
-                    )
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+            ) {
+                items(
+                    items = alertas,
+                    key = { alerta -> alerta.id }
+                ) { alerta ->
 
-                    Text("Descripción: ${alerta.descripcion}")
-                    Text("Ubicación: ${alerta.ubicacion}")
-                    Text("Reportada por: ${alerta.reportadaPor}")
-                    Text("Estado: ${alerta.estado}")
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp)
+                    ) {
+                        Text(
+                            text = alerta.tipo,
+                            style = MaterialTheme.typography.titleMedium
+                        )
 
-                    if (alerta.estado == "Activa") {
+                        Text(
+                            text = "Descripción: ${alerta.descripcion}"
+                        )
+
+                        Text(
+                            text = "Ubicación: ${alerta.ubicacion}"
+                        )
+
+                        Text(
+                            text = "Reportada por: ${alerta.reportadaPor}"
+                        )
+
+                        Text(
+                            text = "Estado: ${alerta.estado}"
+                        )
+
+                        if (alerta.estado == "Activa") {
+                            Button(
+                                onClick = {
+                                    onAtender(alerta.id)
+                                },
+                                modifier = Modifier.padding(top = 8.dp)
+                            ) {
+                                Text("Marcar como atendida")
+                            }
+                        }
+
                         Button(
                             onClick = {
-                                onAtender(alerta.id)
+                                alertaPendienteEliminar = alerta
                             },
                             modifier = Modifier.padding(top = 8.dp)
                         ) {
-                            Text("Marcar como atendida")
+                            Text("Eliminar alerta")
                         }
-                    }
-
-                    Button(
-                        onClick = {
-                            alertaPendienteEliminar = alerta
-                        },
-                        modifier = Modifier.padding(top = 8.dp)
-                    ) {
-                        Text("Eliminar alerta")
                     }
                 }
             }
