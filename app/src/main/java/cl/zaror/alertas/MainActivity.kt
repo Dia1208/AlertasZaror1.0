@@ -1,8 +1,12 @@
-package cl.zaror.alertas
+﻿package cl.zaror.alertas
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -52,41 +56,47 @@ fun AlertasApp(viewModel: AlertasViewModel) {
         }
     ) { padding ->
         Column(Modifier.padding(padding)) {
-            when (pantalla) {
-                "Inicio" -> Text(
-                    "AlertasZaror1.0",
-                    style = MaterialTheme.typography.headlineMedium,
-                    modifier = Modifier.padding(24.dp)
-                )
+            AnimatedContent(
+                targetState = pantalla,
+                transitionSpec = { fadeIn() togetherWith fadeOut() },
+                label = "AnimacionPantallas"
+            ) { pantallaActual ->
+                when (pantallaActual) {
+                    "Inicio" -> Text(
+                        "AlertasZaror1.0",
+                        style = MaterialTheme.typography.headlineMedium,
+                        modifier = Modifier.padding(24.dp)
+                    )
 
-                "Nueva" -> NuevaAlertaScreen {
+                    "Nueva" -> NuevaAlertaScreen {
                         tipo,
                         descripcion,
                         ubicacion,
                         reportadaPor,
                         fotoUri ->
 
-                    viewModel.guardarAlerta(
-                        Alerta(
-                            tipo = tipo,
-                            descripcion = descripcion,
-                            ubicacion = ubicacion,
-                            reportadaPor = reportadaPor,
-                            fotoUri = fotoUri
+                        viewModel.guardarAlerta(
+                            Alerta(
+                                tipo = tipo,
+                                descripcion = descripcion,
+                                ubicacion = ubicacion,
+                                reportadaPor = reportadaPor,
+                                fotoUri = fotoUri
+                            )
                         )
-                    )
-                    pantalla = "Alertas"
-                }
+                        pantalla = "Alertas"
+                    }
 
-                "Alertas" -> LazyColumn(
-                    Modifier.fillMaxWidth().padding(16.dp)
-                ) {
-                    items(alertas, key = { it.id }) { alerta ->
-                        AlertaCard(
-                            alerta = alerta,
-                            onAtender = viewModel::marcarComoAtendida,
-                            onEliminar = viewModel::eliminarAlerta
-                        )
+                    "Alertas" -> LazyColumn(
+                        Modifier.fillMaxWidth().padding(16.dp)
+                    ) {
+                        items(alertas, key = { it.id }) { alerta ->
+                            AlertaCard(
+                                alerta = alerta,
+                                onAtender = viewModel::marcarComoAtendida,
+                                onEliminar = viewModel::eliminarAlerta
+                            )
+                        }
                     }
                 }
             }
