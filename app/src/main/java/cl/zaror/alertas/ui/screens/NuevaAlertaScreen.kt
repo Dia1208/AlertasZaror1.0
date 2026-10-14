@@ -1,7 +1,9 @@
 package cl.zaror.alertas.ui.screens
 
-import android.Manifest
-import android.content.pm.PackageManager
+import android.content.Context
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Column
@@ -9,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -17,8 +20,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
-import com.google.android.gms.location.LocationServices
+import cl.zaror.alertas.domain.Validaciones
 
 @Composable
 fun NuevaAlertaScreen(
@@ -31,8 +33,6 @@ fun NuevaAlertaScreen(
     ) -> Unit
 ) {
     val context = LocalContext.current
-    val clienteUbicacion =
-        remember { LocationServices.getFusedLocationProviderClient(context) }
 
     var tipo by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
@@ -40,42 +40,29 @@ fun NuevaAlertaScreen(
     var reportadaPor by remember { mutableStateOf("") }
     var fotoUri by remember { mutableStateOf<String?>(null) }
 
-    var error by remember { mutableStateOf("") }
+    var errorTipo by remember { mutableStateOf<String?>(null) }
+    var errorDescripcion by remember { mutableStateOf<String?>(null) }
+    var errorUbicacion by remember { mutableStateOf<String?>(null) }
+    var errorReportante by remember { mutableStateOf<String?>(null) }
 
-    val selectorFoto =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.GetContent()
-        ) {
-            fotoUri = it?.toString()
-        }
-
-    val permisoUbicacion =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.RequestMultiplePermissions()
-        ) { permisos ->
-            val permitido =
-                permisos[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
-                permisos[Manifest.permission.ACCESS_COARSE_LOCATION] == true
-
-            if (permitido) {
-                clienteUbicacion.lastLocation.addOnSuccessListener { location ->
-                    if (location != null) {
-                        ubicacion =
-                            "${location.latitude}, ${location.longitude}"
-                    }
-                }
-            }
-        }
+    val selectorFoto = rememberLauncherForActivityResult(
+        ActivityResultContracts.GetContent()
+    ) { uri ->
+        fotoUri = uri?.toString()
+    }
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(24.dp)
     ) {
-        Text("Registrar nueva alerta")
+        Text(
+            text = "Registrar nueva alerta",
+            style = MaterialTheme.typography.headlineSmall
+        )
 
         Text(
-            "Tipo de alerta",
+            text = "Tipo de alerta",
             modifier = Modifier.padding(top = 16.dp)
         )
 
@@ -89,20 +76,34 @@ fun NuevaAlertaScreen(
                     selected = tipo == opcion,
                     onClick = {
                         tipo = opcion
-                        error = ""
+                        errorTipo = Validaciones.validarTipo(tipo)
                     }
                 )
                 Text(
-                    opcion,
+                    text = opcion,
                     modifier = Modifier.padding(top = 12.dp)
                 )
             }
         }
 
+        errorTipo?.let {
+            Text(
+                text = it,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+
         OutlinedTextField(
             value = descripcion,
-            onValueChange = { descripcion = it },
+            onValueChange = {
+                descripcion = it
+                errorDescripcion = null
+            },
             label = { Text("Descripción") },
+            isError = errorDescripcion != null,
+            supportingText = {
+                errorDescripcion?.let { Text(it) }
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 12.dp)
@@ -110,8 +111,15 @@ fun NuevaAlertaScreen(
 
         OutlinedTextField(
             value = ubicacion,
-            onValueChange = { ubicacion = it },
-            label = { Text("Ubicación") },
+            onValueChange = {
+                ubicacion = it
+                errorUbicacion = null
+            },
+            label = { Text("Ubicación de prueba") },
+            isError = errorUbicacion != null,
+            supportingText = {
+                errorUbicacion?.let { Text(it) }
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 12.dp)
@@ -119,39 +127,38 @@ fun NuevaAlertaScreen(
 
         OutlinedButton(
             onClick = {
-                val tienePermiso =
-                    ContextCompat.checkSelfPermission(
-                        context,
-                        Manifest.permission.ACCESS_FINE_LOCATION
-                    ) == PackageManager.PERMISSION_GRANTED
-
-                if (tienePermiso) {
-                    clienteUbicacion.lastLocation.addOnSuccessListener {
-                        if (it != null) {
-                            ubicacion =
-                                "${it.latitude}, ${it.longitude}"
-                        }
-                    }
-                } else {
-                    permisoUbicacion.launch(
-                        arrayOf(
-                            Manifest.permission.ACCESS_FINE_LOCATION,
-                            Manifest.permission.ACCESS_COARSE_LOCATION
-                        )
-                    )
-                }
+                ubicacion = "Ubicación ficticia: Block 3, casa 15"
+                errorUbicacion = null
             },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 12.dp)
         ) {
-            Text("Obtener ubicación actual")
+            Text("Usar ubicación ficticia")
+        }
+
+        OutlinedButton(
+            onClick = {
+                probarVibracion(context)
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 8.dp)
+        ) {
+            Text("Probar vibración del dispositivo")
         }
 
         OutlinedTextField(
             value = reportadaPor,
-            onValueChange = { reportadaPor = it },
+            onValueChange = {
+                reportadaPor = it
+                errorReportante = null
+            },
             label = { Text("Reportada por") },
+            isError = errorReportante != null,
+            supportingText = {
+                errorReportante?.let { Text(it) }
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 12.dp)
@@ -174,23 +181,23 @@ fun NuevaAlertaScreen(
             )
         }
 
-        if (error.isNotEmpty()) {
-            Text(
-                error,
-                modifier = Modifier.padding(top = 8.dp)
-            )
-        }
-
         Button(
             onClick = {
-                if (
-                    tipo.isBlank() ||
-                    descripcion.isBlank() ||
-                    ubicacion.isBlank() ||
-                    reportadaPor.isBlank()
-                ) {
-                    error = "Completa todos los campos obligatorios"
-                } else {
+                errorTipo = Validaciones.validarTipo(tipo)
+                errorDescripcion =
+                    Validaciones.validarDescripcion(descripcion)
+                errorUbicacion =
+                    Validaciones.validarUbicacion(ubicacion)
+                errorReportante =
+                    Validaciones.validarReportante(reportadaPor)
+
+                val formularioValido =
+                    errorTipo == null &&
+                    errorDescripcion == null &&
+                    errorUbicacion == null &&
+                    errorReportante == null
+
+                if (formularioValido) {
                     onRegistrar(
                         tipo.trim(),
                         descripcion.trim(),
@@ -206,5 +213,29 @@ fun NuevaAlertaScreen(
         ) {
             Text("Registrar alerta")
         }
+    }
+}
+
+private fun probarVibracion(context: Context) {
+    val vibrador = context.getSystemService(Vibrator::class.java)
+
+    if (vibrador?.hasVibrator() == true) {
+        vibrador.vibrate(
+            VibrationEffect.createOneShot(
+                250,
+                VibrationEffect.DEFAULT_AMPLITUDE
+            )
+        )
+        Toast.makeText(
+            context,
+            "Prueba de vibración ejecutada",
+            Toast.LENGTH_SHORT
+        ).show()
+    } else {
+        Toast.makeText(
+            context,
+            "Este dispositivo no dispone de vibración",
+            Toast.LENGTH_SHORT
+        ).show()
     }
 }
