@@ -5,7 +5,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -32,7 +34,13 @@ fun AlertaCard(
         mutableStateOf(false)
     }
 
+    val colorFondo by animateColorAsState(
+        targetValue = if (alerta.estado == "Activa") MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant,
+        label = "ColorEstadoAlerta"
+    )
+
     Card(
+        colors = CardDefaults.cardColors(containerColor = colorFondo),
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
