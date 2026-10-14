@@ -13,27 +13,48 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
+import cl.zaror.alertas.data.AlertasRepository
+import cl.zaror.alertas.data.AppDatabase
 import cl.zaror.alertas.ui.theme.AlertasZaror10Theme
+import cl.zaror.alertas.viewmodel.AlertasViewModel
+import cl.zaror.alertas.viewmodel.AlertasViewModelFactory
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val baseDatos = AppDatabase.obtener(this)
+        val repositorio = AlertasRepository(baseDatos.alertaDao())
+        val factory = AlertasViewModelFactory(repositorio)
+
+        val alertasViewModel = ViewModelProvider(
+            this,
+            factory
+        )[AlertasViewModel::class.java]
+
         setContent {
             AlertasZaror10Theme {
-                AlertasApp()
+                AlertasApp(alertasViewModel)
             }
         }
     }
 }
 
 @Composable
-fun AlertasApp() {
+fun AlertasApp(viewModel: AlertasViewModel) {
     var pantallaActual by remember { mutableStateOf("Inicio") }
+    val alertas by viewModel.alertas.collectAsState()
 
     Scaffold(
         bottomBar = {
@@ -73,7 +94,7 @@ fun AlertasApp() {
         ) {
             when (pantallaActual) {
                 "Inicio" -> PantallaInicio()
-                "Alertas" -> PantallaAlertas()
+                "Alertas" -> PantallaAlertas(alertas.size)
                 "Nueva" -> PantallaNuevaAlerta()
             }
         }
@@ -107,14 +128,14 @@ fun PantallaInicio() {
 }
 
 @Composable
-fun PantallaAlertas() {
+fun PantallaAlertas(cantidadAlertas: Int) {
     Text(
         text = "Alertas registradas",
         style = MaterialTheme.typography.headlineMedium
     )
 
     Text(
-        text = "Aquí aparecerá el historial de alertas.",
+        text = "Cantidad de alertas guardadas: $cantidadAlertas",
         modifier = Modifier.padding(top = 12.dp)
     )
 }
