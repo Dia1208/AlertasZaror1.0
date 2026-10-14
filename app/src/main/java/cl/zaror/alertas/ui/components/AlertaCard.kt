@@ -1,28 +1,29 @@
 package cl.zaror.alertas.ui.components
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage
 import cl.zaror.alertas.data.Alerta
+import coil.compose.AsyncImage
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
+private fun iconoDeTipo(tipo: String): ImageVector = when (tipo) {
+    "Emergencia" -> Icons.Default.NotificationsActive
+    "Falla de alarma" -> Icons.Default.Build
+    else -> Icons.Default.Info
+}
 
 @Composable
 fun AlertaCard(
@@ -30,43 +31,47 @@ fun AlertaCard(
     onAtender: (Int) -> Unit,
     onEliminar: (Int) -> Unit
 ) {
-    var mostrarDialogo by remember {
-        mutableStateOf(false)
-    }
+    var mostrarDialogo by remember { mutableStateOf(false) }
 
     val colorFondo by animateColorAsState(
-        targetValue = if (alerta.estado == "Activa") MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.surfaceVariant,
+        targetValue = if (alerta.estado == "Activa") {
+            MaterialTheme.colorScheme.errorContainer
+        } else {
+            MaterialTheme.colorScheme.secondaryContainer
+        },
+        animationSpec = tween(500),
         label = "ColorEstadoAlerta"
     )
 
     Card(
-        colors = CardDefaults.cardColors(containerColor = colorFondo),
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
+            .animateContentSize(),
+        colors = CardDefaults.cardColors(containerColor = colorFondo)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Text(
-                text = alerta.tipo,
-                style = MaterialTheme.typography.titleMedium
-            )
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(iconoDeTipo(alerta.tipo), contentDescription = null, modifier = Modifier.size(32.dp))
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        text = alerta.tipo,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                            .format(Date(alerta.fechaHora)),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                Text(alerta.estado, style = MaterialTheme.typography.labelLarge)
+            }
 
-            Text("Descripción: ${alerta.descripcion}")
+            Text("Descripción: ${alerta.descripcion}", modifier = Modifier.padding(top = 8.dp))
             Text("Ubicación: ${alerta.ubicacion}")
             Text("Reportada por: ${alerta.reportadaPor}")
-            Text("Estado: ${alerta.estado}")
-
-            Text(
-                text = "Fecha: ${
-                    SimpleDateFormat(
-                        "dd/MM/yyyy HH:mm",
-                        Locale.getDefault()
-                    ).format(Date(alerta.fechaHora))
-                }",
-                modifier = Modifier.padding(top = 4.dp)
-            )
 
             if (!alerta.fotoUri.isNullOrBlank()) {
                 AsyncImage(
@@ -78,57 +83,41 @@ fun AlertaCard(
                 )
             }
 
-            if (alerta.estado == "Activa") {
-                Button(
-                    onClick = {
-                        onAtender(alerta.id)
-                    },
-                    modifier = Modifier.padding(top = 8.dp)
-                ) {
-                    Text("Marcar como atendida")
-                }
-            }
-
-            Button(
-                onClick = {
-                    mostrarDialogo = true
-                },
-                modifier = Modifier.padding(top = 8.dp)
+            Row(
+                modifier = Modifier.padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("Eliminar alerta")
+                if (alerta.estado == "Activa") {
+                    Button(onClick = { onAtender(alerta.id) }) {
+                        Icon(Icons.Default.Check, null)
+                        Spacer(Modifier.width(6.dp))
+                        Text("Atendida")
+                    }
+                }
+                OutlinedButton(onClick = { mostrarDialogo = true }) {
+                    Icon(Icons.Default.Delete, null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Eliminar")
+                }
             }
         }
     }
 
     if (mostrarDialogo) {
         AlertDialog(
-            onDismissRequest = {
-                mostrarDialogo = false
-            },
-            title = {
-                Text("Confirmar eliminación")
-            },
-            text = {
-                Text("¿Seguro que deseas eliminar esta alerta?")
-            },
+            onDismissRequest = { mostrarDialogo = false },
+            title = { Text("Confirmar eliminación") },
+            text = { Text("¿Seguro que deseas eliminar esta alerta?") },
             confirmButton = {
                 TextButton(
                     onClick = {
                         onEliminar(alerta.id)
                         mostrarDialogo = false
                     }
-                ) {
-                    Text("Confirmar")
-                }
+                ) { Text("Confirmar") }
             },
             dismissButton = {
-                TextButton(
-                    onClick = {
-                        mostrarDialogo = false
-                    }
-                ) {
-                    Text("Cancelar")
-                }
+                TextButton(onClick = { mostrarDialogo = false }) { Text("Cancelar") }
             }
         )
     }
