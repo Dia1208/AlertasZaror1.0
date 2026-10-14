@@ -3,54 +3,31 @@ package cl.zaror.alertas
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
-import cl.zaror.alertas.data.Alerta
-import cl.zaror.alertas.data.AlertasRepository
-import cl.zaror.alertas.data.AppDatabase
+import cl.zaror.alertas.data.*
 import cl.zaror.alertas.ui.screens.NuevaAlertaScreen
 import cl.zaror.alertas.ui.theme.AlertasZaror10Theme
-import cl.zaror.alertas.viewmodel.AlertasViewModel
-import cl.zaror.alertas.viewmodel.AlertasViewModelFactory
+import cl.zaror.alertas.viewmodel.*
 import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import java.util.*
 
 class MainActivity : ComponentActivity() {
+    override fun onCreate(state: Bundle?) {
+        super.onCreate(state)
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        val baseDatos = AppDatabase.obtener(this)
-        val repositorio = AlertasRepository(baseDatos.alertaDao())
-        val factory = AlertasViewModelFactory(repositorio)
-
-        val viewModel = ViewModelProvider(
-            this,
-            factory
-        )[AlertasViewModel::class.java]
+        val db = AppDatabase.obtener(this)
+        val repository = AlertasRepository(db.alertaDao())
+        val factory = AlertasViewModelFactory(repository)
+        val viewModel = ViewModelProvider(this, factory)
+            .get(AlertasViewModel::class.java)
 
         setContent {
             AlertasZaror10Theme {
@@ -62,61 +39,32 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AlertasApp(viewModel: AlertasViewModel) {
-    var pantallaActual by remember {
-        mutableStateOf("Inicio")
-    }
-
+    var pantalla by remember { mutableStateOf("Inicio") }
     val alertas by viewModel.alertas.collectAsState()
 
     Scaffold(
         bottomBar = {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
+                Modifier.fillMaxWidth().padding(8.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                BotonNavegacion(
-                    texto = "Inicio",
-                    seleccionado = pantallaActual == "Inicio"
-                ) {
-                    pantallaActual = "Inicio"
-                }
-
-                BotonNavegacion(
-                    texto = "Alertas",
-                    seleccionado = pantallaActual == "Alertas"
-                ) {
-                    pantallaActual = "Alertas"
-                }
-
-                BotonNavegacion(
-                    texto = "Nueva",
-                    seleccionado = pantallaActual == "Nueva"
-                ) {
-                    pantallaActual = "Nueva"
-                }
+                Button({ pantalla = "Inicio" }) { Text("Inicio") }
+                Button({ pantalla = "Alertas" }) { Text("Alertas") }
+                Button({ pantalla = "Nueva" }) { Text("Nueva") }
             }
         }
-    ) { paddingValues ->
-
+    ) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
+            Modifier.fillMaxSize().padding(padding),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            when (pantallaActual) {
+            when (pantalla) {
                 "Inicio" -> PantallaInicio()
 
                 "Alertas" -> PantallaAlertas(
                     alertas = alertas,
-                    onAtender = { id ->
-                        viewModel.marcarComoAtendida(id)
-                    },
-                    onEliminar = { id ->
-                        viewModel.eliminarAlerta(id)
-                    }
+                    onAtender = viewModel::marcarComoAtendida,
+                    onEliminar = viewModel::eliminarAlerta
                 )
 
                 "Nueva" -> NuevaAlertaScreen(
@@ -124,17 +72,20 @@ fun AlertasApp(viewModel: AlertasViewModel) {
                             tipo,
                             descripcion,
                             ubicacion,
-                            reportadaPor ->
+                            reportadaPor,
+                            fotoUri ->
 
-                        val nuevaAlerta = Alerta(
-                            tipo = tipo,
-                            descripcion = descripcion,
-                            ubicacion = ubicacion,
-                            reportadaPor = reportadaPor
+                        viewModel.guardarAlerta(
+                            Alerta(
+                                tipo = tipo,
+                                descripcion = descripcion,
+                                ubicacion = ubicacion,
+                                reportadaPor = reportadaPor,
+                                fotoUri = fotoUri
+                            )
                         )
 
-                        viewModel.guardarAlerta(nuevaAlerta)
-                        pantallaActual = "Alertas"
+                        pantalla = "Alertas"
                     }
                 )
             }
@@ -143,38 +94,18 @@ fun AlertasApp(viewModel: AlertasViewModel) {
 }
 
 @Composable
-fun BotonNavegacion(
-    texto: String,
-    seleccionado: Boolean,
-    onClick: () -> Unit
-) {
-    Button(onClick = onClick) {
-        Text(
-            text = if (seleccionado) {
-                "● $texto"
-            } else {
-                texto
-            }
-        )
-    }
-}
-
-@Composable
 fun PantallaInicio() {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(24.dp),
+        Modifier.fillMaxWidth().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "AlertasZaror1.0",
+            "AlertasZaror1.0",
             style = MaterialTheme.typography.headlineMedium
         )
-
         Text(
-            text = "Sistema comunitario de alertas para la Junta de Vecinos Población Zaror.",
-            modifier = Modifier.padding(top = 12.dp)
+            "Sistema comunitario de alertas para la Junta de Vecinos Población Zaror.",
+            Modifier.padding(top = 12.dp)
         )
     }
 }
@@ -185,120 +116,95 @@ fun PantallaAlertas(
     onAtender: (Int) -> Unit,
     onEliminar: (Int) -> Unit
 ) {
-    var alertaPendienteEliminar by remember {
-        mutableStateOf<Alerta?>(null)
-    }
+    var filtro by remember { mutableStateOf("Todas") }
+    var busqueda by remember { mutableStateOf("") }
+    var eliminar by remember { mutableStateOf<Alerta?>(null) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp)
-    ) {
+    val lista = alertas
+        .filter {
+            filtro == "Todas" || it.estado == filtro.removeSuffix("s")
+        }
+        .filter {
+            val texto = busqueda.lowercase()
+            texto.isBlank() ||
+                it.tipo.lowercase().contains(texto) ||
+                it.descripcion.lowercase().contains(texto) ||
+                it.ubicacion.lowercase().contains(texto)
+        }
+
+    Column(Modifier.fillMaxWidth().padding(16.dp)) {
         Text(
-            text = "Alertas registradas",
+            "Alertas registradas",
             style = MaterialTheme.typography.headlineMedium
         )
 
-        if (alertas.isEmpty()) {
-            Text(
-                text = "Todavía no hay alertas registradas.",
-                modifier = Modifier.padding(top = 16.dp)
-            )
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-            ) {
-                items(
-                    items = alertas,
-                    key = { alerta -> alerta.id }
-                ) { alerta ->
+        OutlinedTextField(
+            value = busqueda,
+            onValueChange = { busqueda = it },
+            label = { Text("Buscar alerta") },
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp)
+        )
 
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 12.dp)
-                    ) {
-                        Text(
-                            text = alerta.tipo,
-                            style = MaterialTheme.typography.titleMedium
-                        )
+        Row(
+            Modifier.fillMaxWidth().padding(top = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button({ filtro = "Todas" }) { Text("Todas") }
+            Button({ filtro = "Activas" }) { Text("Activas") }
+            Button({ filtro = "Atendidas" }) { Text("Atendidas") }
+        }
 
-                        Text(
-                            text = "Descripción: ${alerta.descripcion}"
-                        )
+        LazyColumn {
+            items(lista, key = { it.id }) { alerta ->
+                Column(
+                    Modifier.fillMaxWidth().padding(vertical = 12.dp)
+                ) {
+                    Text(alerta.tipo, style = MaterialTheme.typography.titleMedium)
+                    Text("Descripción: ${alerta.descripcion}")
+                    Text("Ubicación: ${alerta.ubicacion}")
+                    Text("Reportada por: ${alerta.reportadaPor}")
+                    Text("Estado: ${alerta.estado}")
+                    Text("Registrada: ${fecha(alerta.fechaHora)}")
 
-                        Text(
-                            text = "Ubicación: ${alerta.ubicacion}"
-                        )
+                    if (alerta.fotoUri != null) {
+                        Text("Foto adjunta")
+                    }
 
-                        Text(
-                            text = "Reportada por: ${alerta.reportadaPor}"
-                        )
-
-                        Text(
-                            text = "Estado: ${alerta.estado}"
-                        )
-
-                        Text(
-                            text = "Registrada: ${
-                                formatearFechaHora(alerta.fechaHora)
-                            }"
-                        )
-
-                        if (alerta.estado == "Activa") {
-                            Button(
-                                onClick = {
-                                    onAtender(alerta.id)
-                                },
-                                modifier = Modifier.padding(top = 8.dp)
-                            ) {
-                                Text("Marcar como atendida")
-                            }
-                        }
-
+                    if (alerta.estado == "Activa") {
                         Button(
-                            onClick = {
-                                alertaPendienteEliminar = alerta
-                            },
-                            modifier = Modifier.padding(top = 8.dp)
+                            { onAtender(alerta.id) },
+                            Modifier.padding(top = 8.dp)
                         ) {
-                            Text("Eliminar alerta")
+                            Text("Marcar como atendida")
                         }
+                    }
+
+                    Button(
+                        { eliminar = alerta },
+                        Modifier.padding(top = 8.dp)
+                    ) {
+                        Text("Eliminar alerta")
                     }
                 }
             }
         }
     }
 
-    alertaPendienteEliminar?.let { alerta ->
+    eliminar?.let { alerta ->
         AlertDialog(
-            onDismissRequest = {
-                alertaPendienteEliminar = null
-            },
-            title = {
-                Text("Confirmar eliminación")
-            },
-            text = {
-                Text("¿Seguro que deseas eliminar esta alerta?")
-            },
+            onDismissRequest = { eliminar = null },
+            title = { Text("Confirmar eliminación") },
+            text = { Text("¿Seguro que deseas eliminar esta alerta?") },
             confirmButton = {
-                TextButton(
-                    onClick = {
-                        onEliminar(alerta.id)
-                        alertaPendienteEliminar = null
-                    }
-                ) {
+                TextButton({
+                    onEliminar(alerta.id)
+                    eliminar = null
+                }) {
                     Text("Confirmar")
                 }
             },
             dismissButton = {
-                TextButton(
-                    onClick = {
-                        alertaPendienteEliminar = null
-                    }
-                ) {
+                TextButton({ eliminar = null }) {
                     Text("Cancelar")
                 }
             }
@@ -306,11 +212,6 @@ fun PantallaAlertas(
     }
 }
 
-fun formatearFechaHora(fechaHora: Long): String {
-    val formato = SimpleDateFormat(
-        "dd/MM/yyyy HH:mm",
-        Locale.getDefault()
-    )
-
-    return formato.format(Date(fechaHora))
-}
+fun fecha(valor: Long): String =
+    SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+        .format(Date(valor))
