@@ -24,8 +24,7 @@ class MainActivity : ComponentActivity() {
         val db = AppDatabase.obtener(this)
         val repository = AlertasRepository(db.alertaDao())
         val factory = AlertasViewModelFactory(repository)
-        val viewModel = ViewModelProvider(this, factory)
-        [AlertasViewModel::class.java]
+        val viewModel = ViewModelProvider(this, factory)[AlertasViewModel::class.java]
 
         setContent {
             AlertasZaror10Theme {
