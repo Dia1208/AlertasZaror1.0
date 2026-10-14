@@ -12,21 +12,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import cl.zaror.alertas.data.*
+import cl.zaror.alertas.ui.components.AlertaCard
 import cl.zaror.alertas.ui.screens.NuevaAlertaScreen
 import cl.zaror.alertas.ui.theme.AlertasZaror10Theme
 import cl.zaror.alertas.viewmodel.*
-import java.text.SimpleDateFormat
-import java.util.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
 
-        val database = AppDatabase.obtener(this)
-        val repository = AlertasRepository(database.alertaDao())
+        val db = AppDatabase.obtener(this)
+        val repository = AlertasRepository(db.alertaDao())
         val factory = AlertasViewModelFactory(repository)
         val viewModel = ViewModelProvider(this, factory)
-            [AlertasViewModel::class.java]
+        [AlertasViewModel::class.java]
 
         setContent {
             AlertasZaror10Theme {
@@ -38,7 +37,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AlertasApp(viewModel: AlertasViewModel) {
-    var screen by remember { mutableStateOf("Inicio") }
+    var pantalla by remember { mutableStateOf("Inicio") }
     val alertas by viewModel.alertas.collectAsState()
 
     Scaffold(
@@ -47,22 +46,26 @@ fun AlertasApp(viewModel: AlertasViewModel) {
                 Modifier.fillMaxWidth().padding(8.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                Button({ screen = "Inicio" }) { Text("Inicio") }
-                Button({ screen = "Alertas" }) { Text("Alertas") }
-                Button({ screen = "Nueva" }) { Text("Nueva") }
+                Button({ pantalla = "Inicio" }) { Text("Inicio") }
+                Button({ pantalla = "Alertas" }) { Text("Alertas") }
+                Button({ pantalla = "Nueva" }) { Text("Nueva") }
             }
         }
     ) { padding ->
         Column(Modifier.padding(padding)) {
-            when (screen) {
+            when (pantalla) {
                 "Inicio" -> Text(
                     "AlertasZaror1.0",
                     style = MaterialTheme.typography.headlineMedium,
                     modifier = Modifier.padding(24.dp)
                 )
 
-                "Nueva" -> NuevaAlertaScreen { tipo, descripcion,
-                    ubicacion, reportadaPor, fotoUri ->
+                "Nueva" -> NuevaAlertaScreen {
+                        tipo,
+                        descripcion,
+                        ubicacion,
+                        reportadaPor,
+                        fotoUri ->
 
                     viewModel.guardarAlerta(
                         Alerta(
@@ -73,45 +76,18 @@ fun AlertasApp(viewModel: AlertasViewModel) {
                             fotoUri = fotoUri
                         )
                     )
-                    screen = "Alertas"
+                    pantalla = "Alertas"
                 }
 
                 "Alertas" -> LazyColumn(
                     Modifier.fillMaxWidth().padding(16.dp)
                 ) {
                     items(alertas, key = { it.id }) { alerta ->
-                        Column(
-                            Modifier.fillMaxWidth().padding(12.dp)
-                        ) {
-                            Text(alerta.tipo,
-                                style = MaterialTheme.typography.titleMedium)
-                            Text("Descripción: ${alerta.descripcion}")
-                            Text("Ubicación: ${alerta.ubicacion}")
-                            Text("Reportada por: ${alerta.reportadaPor}")
-                            Text("Estado: ${alerta.estado}")
-                            Text(
-                                "Fecha: ${
-                                    SimpleDateFormat(
-                                        "dd/MM/yyyy HH:mm",
-                                        Locale.getDefault()
-                                    ).format(Date(alerta.fechaHora))
-                                }"
-                            )
-
-                            if (alerta.estado == "Activa") {
-                                Button({
-                                    viewModel.marcarComoAtendida(alerta.id)
-                                }) {
-                                    Text("Marcar como atendida")
-                                }
-                            }
-
-                            Button({
-                                viewModel.eliminarAlerta(alerta.id)
-                            }) {
-                                Text("Eliminar")
-                            }
-                        }
+                        AlertaCard(
+                            alerta = alerta,
+                            onAtender = viewModel::marcarComoAtendida,
+                            onEliminar = viewModel::eliminarAlerta
+                        )
                     }
                 }
             }
