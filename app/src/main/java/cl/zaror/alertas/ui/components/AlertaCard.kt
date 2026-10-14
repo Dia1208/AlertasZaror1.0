@@ -10,6 +10,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import cl.zaror.alertas.data.Alerta
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -34,10 +35,10 @@ fun AlertaCard(
                 style = MaterialTheme.typography.titleMedium
             )
 
-            Text(text = "Descripción: ${alerta.descripcion}")
-            Text(text = "Ubicación: ${alerta.ubicacion}")
-            Text(text = "Reportada por: ${alerta.reportadaPor}")
-            Text(text = "Estado: ${alerta.estado}")
+            Text("Descripción: ${alerta.descripcion}")
+            Text("Ubicación: ${alerta.ubicacion}")
+            Text("Reportada por: ${alerta.reportadaPor}")
+            Text("Estado: ${alerta.estado}")
 
             Text(
                 text = "Fecha: ${
@@ -45,13 +46,17 @@ fun AlertaCard(
                         "dd/MM/yyyy HH:mm",
                         Locale.getDefault()
                     ).format(Date(alerta.fechaHora))
-                }"
+                }",
+                modifier = Modifier.padding(top = 4.dp)
             )
 
             if (!alerta.fotoUri.isNullOrBlank()) {
-                Text(
-                    text = "Esta alerta tiene una foto adjunta.",
-                    modifier = Modifier.padding(top = 8.dp)
+                AsyncImage(
+                    model = alerta.fotoUri,
+                    contentDescription = "Foto de la alerta",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp)
                 )
             }
 
