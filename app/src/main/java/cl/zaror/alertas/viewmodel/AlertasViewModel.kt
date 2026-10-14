@@ -10,25 +10,35 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class AlertasViewModel(
-    private val repository: AlertasRepository
+    private val repositorio: AlertasRepository
 ) : ViewModel() {
 
     val alertas: StateFlow<List<Alerta>> =
-        repository.alertas.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = emptyList()
-        )
+        repositorio.observarAlertas()
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5000),
+                initialValue = emptyList()
+            )
 
     fun guardarAlerta(alerta: Alerta) {
         viewModelScope.launch {
-            repository.insertar(alerta)
+            repositorio.guardarAlerta(alerta)
         }
     }
 
-    fun resolverAlerta(id: Int) {
+    fun marcarComoAtendida(id: Int) {
         viewModelScope.launch {
-            repository.marcarComoResuelta(id)
+            repositorio.actualizarEstado(
+                id = id,
+                nuevoEstado = "Atendida"
+            )
+        }
+    }
+
+    fun eliminarAlerta(id: Int) {
+        viewModelScope.launch {
+            repositorio.eliminarAlerta(id)
         }
     }
 }
