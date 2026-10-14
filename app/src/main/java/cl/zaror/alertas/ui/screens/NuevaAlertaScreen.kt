@@ -148,7 +148,7 @@ fun NuevaAlertaScreen(
     }
 }
 
-private fun vibrarAlRegistrar(context: Context) {
+fun vibrarAlRegistrar(context: Context) {
     val vibrador = context.getSystemService(Vibrator::class.java)
     if (vibrador?.hasVibrator() == true) {
         vibrador.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))

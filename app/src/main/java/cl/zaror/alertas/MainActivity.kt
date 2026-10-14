@@ -22,6 +22,7 @@ import androidx.lifecycle.ViewModelProvider
 import cl.zaror.alertas.data.*
 import cl.zaror.alertas.ui.components.AlertaCard
 import cl.zaror.alertas.ui.screens.NuevaAlertaScreen
+import cl.zaror.alertas.ui.screens.ReporteFallaScreen
 import cl.zaror.alertas.ui.theme.AlertasZaror10Theme
 import cl.zaror.alertas.viewmodel.*
 
@@ -51,7 +52,8 @@ fun AlertasApp(viewModel: AlertasViewModel) {
     val pestanas = listOf(
         Triple("Inicio", "Inicio", Icons.Default.Home),
         Triple("Alertas", "Alertas", Icons.Default.Notifications),
-        Triple("Nueva", "Nueva", Icons.Default.AddCircle)
+        Triple("Nueva", "Nueva", Icons.Default.AddCircle),
+        Triple("Falla", "Falla", Icons.Default.Build)
     )
 
     Scaffold(
@@ -68,7 +70,7 @@ fun AlertasApp(viewModel: AlertasViewModel) {
             }
         },
         floatingActionButton = {
-            if (pantalla != "Nueva") {
+            if (pantalla != "Nueva" && pantalla != "Falla") {
                 BotonAlarma { pantalla = "Nueva" }
             }
         }
@@ -112,6 +114,18 @@ fun AlertasApp(viewModel: AlertasViewModel) {
                             ubicacion = ubicacion,
                             reportadaPor = reportadaPor,
                             fotoUri = fotoUri
+                        )
+                    )
+                    pantalla = "Alertas"
+                }
+
+                "Falla" -> ReporteFallaScreen { tipoFalla, descripcion, equipo, reportadaPor ->
+                    viewModel.guardarAlerta(
+                        Alerta(
+                            tipo = "Falla de alarma",
+                            descripcion = "[$tipoFalla] $descripcion",
+                            ubicacion = equipo,
+                            reportadaPor = reportadaPor
                         )
                     )
                     pantalla = "Alertas"
