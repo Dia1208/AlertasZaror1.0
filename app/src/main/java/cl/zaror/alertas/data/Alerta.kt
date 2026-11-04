@@ -8,5 +8,7 @@ data class Alerta(
     val fotoUri: String? = null,
     val estado: String = "Activa",
     val fechaHora: Long = System.currentTimeMillis(),
-    val reportadaPor: String
+    val reportadaPor: String,
+
+    val usuarioId: Int = 0
 )
