@@ -9,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [AlertaEntity::class, UsuarioEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -41,6 +41,15 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // Vincula cada alerta con su usuario. Las alertas antiguas quedan con 0.
+        private val MIGRACION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE `alertas` ADD COLUMN `usuarioId` INTEGER NOT NULL DEFAULT 0"
+                )
+            }
+        }
+
         fun obtener(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val nuevaBase = Room.databaseBuilder(
@@ -48,7 +57,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "alertas_zaror.db"
                 )
-                    .addMigrations(MIGRACION_1_2)
+                    .addMigrations(MIGRACION_1_2, MIGRACION_2_3)
                     .build()
 
                 INSTANCE = nuevaBase
