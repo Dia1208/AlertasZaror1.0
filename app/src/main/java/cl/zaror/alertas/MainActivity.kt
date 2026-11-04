@@ -15,13 +15,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import cl.zaror.alertas.data.*
 import cl.zaror.alertas.ui.components.AlertaCard
+import cl.zaror.alertas.ui.screens.LoginScreen
 import cl.zaror.alertas.ui.screens.NuevaAlertaScreen
+import cl.zaror.alertas.ui.screens.RegistroScreen
 import cl.zaror.alertas.ui.screens.ReporteFallaScreen
 import cl.zaror.alertas.ui.theme.AlertasZaror10Theme
 import cl.zaror.alertas.viewmodel.*
@@ -35,16 +38,74 @@ class MainActivity : ComponentActivity() {
         val factory = AlertasViewModelFactory(repository)
         val viewModel = ViewModelProvider(this, factory)[AlertasViewModel::class.java]
 
+        val authFactory = AuthViewModelFactory(
+            UsuariosRepository(db.usuarioDao()),
+            SesionManager(this)
+        )
+        val authViewModel = ViewModelProvider(this, authFactory)[AuthViewModel::class.java]
+
         setContent {
             AlertasZaror10Theme {
-                AlertasApp(viewModel)
+                AccesoApp(authViewModel, viewModel)
             }
         }
     }
 }
 
+/** Decide qué mostrar según la sesión: carga, login/registro o la app. */
 @Composable
-fun AlertasApp(viewModel: AlertasViewModel) {
+fun AccesoApp(authViewModel: AuthViewModel, viewModel: AlertasViewModel) {
+    val estado by authViewModel.estadoSesion.collectAsState()
+    val error by authViewModel.error.collectAsState()
+    val procesando by authViewModel.procesando.collectAsState()
+    var mostrarRegistro by remember { mutableStateOf(false) }
+
+    when (val sesion = estado) {
+        EstadoSesion.Cargando -> Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator()
+        }
+
+        EstadoSesion.SinSesion -> if (mostrarRegistro) {
+            RegistroScreen(
+                error = error,
+                procesando = procesando,
+                onRegistrar = authViewModel::registrar,
+                onVolverALogin = {
+                    authViewModel.limpiarError()
+                    mostrarRegistro = false
+                },
+                onLimpiarError = authViewModel::limpiarError
+            )
+        } else {
+            LoginScreen(
+                error = error,
+                procesando = procesando,
+                onIniciarSesion = authViewModel::iniciarSesion,
+                onIrARegistro = {
+                    authViewModel.limpiarError()
+                    mostrarRegistro = true
+                },
+                onLimpiarError = authViewModel::limpiarError
+            )
+        }
+
+        is EstadoSesion.Activa -> AlertasApp(
+            viewModel = viewModel,
+            usuario = sesion.usuario,
+            onCerrarSesion = authViewModel::cerrarSesion
+        )
+    }
+}
+
+@Composable
+fun AlertasApp(
+    viewModel: AlertasViewModel,
+    usuario: UsuarioSesion,
+    onCerrarSesion: () -> Unit
+) {
     var pantalla by remember { mutableStateOf("Inicio") }
     val alertas by viewModel.alertas.collectAsState()
     val activas = alertas.count { it.estado == "Activa" }
@@ -103,6 +164,14 @@ fun AlertasApp(viewModel: AlertasViewModel) {
                             Text("Alertas activas: $activas", style = MaterialTheme.typography.titleMedium)
                             Text("Total registradas: ${alertas.size}")
                         }
+                    }
+                    Text(
+                        "Sesión iniciada: ${usuario.nombre}",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(top = 24.dp)
+                    )
+                    TextButton(onClick = onCerrarSesion) {
+                        Text("Cerrar sesión")
                     }
                 }
 

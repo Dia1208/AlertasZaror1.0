@@ -1,5 +1,6 @@
 package cl.zaror.alertas.data
 
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
@@ -13,5 +14,7 @@ data class AlertaEntity(
     val fotoUri: String? = null,
     val estado: String = "Activa",
     val fechaHora: Long = System.currentTimeMillis(),
-    val reportadaPor: String
+    val reportadaPor: String,
+    @ColumnInfo(defaultValue = "0")
+    val usuarioId: Int = 0
 )

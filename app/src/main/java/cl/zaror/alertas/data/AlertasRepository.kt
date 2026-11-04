@@ -39,7 +39,8 @@ class AlertasRepository(
             fotoUri = fotoUri,
             estado = estado,
             fechaHora = fechaHora,
-            reportadaPor = reportadaPor
+            reportadaPor = reportadaPor,
+            usuarioId = usuarioId
         )
     }
 
@@ -52,7 +53,8 @@ class AlertasRepository(
             fotoUri = fotoUri,
             estado = estado,
             fechaHora = fechaHora,
-            reportadaPor = reportadaPor
+            reportadaPor = reportadaPor,
+            usuarioId = usuarioId
         )
     }
 }
