@@ -17,19 +17,18 @@ import cl.zaror.alertas.ui.components.SelectorChips
 
 @Composable
 fun ReporteFallaScreen(
-    onRegistrar: (String, String, String, String) -> Unit
+    nombreUsuario: String,
+    onRegistrar: (String, String, String) -> Unit
 ) {
     val context = LocalContext.current
 
     var tipoFalla by remember { mutableStateOf("") }
     var equipo by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
-    var reportadaPor by remember { mutableStateOf("") }
 
     var errorTipoFalla by remember { mutableStateOf<String?>(null) }
     var errorEquipo by remember { mutableStateOf<String?>(null) }
     var errorDescripcion by remember { mutableStateOf<String?>(null) }
-    var errorReportante by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -72,12 +71,9 @@ fun ReporteFallaScreen(
             minLineas = 3
         )
 
-        CampoTexto(
-            valor = reportadaPor,
-            onCambio = { reportadaPor = it; errorReportante = null },
-            etiqueta = "Reportada por",
-            icono = Icons.Default.Person,
-            error = errorReportante
+        Text(
+            text = "Reportada por: $nombreUsuario",
+            style = MaterialTheme.typography.bodyLarge
         )
 
         Button(
@@ -85,21 +81,18 @@ fun ReporteFallaScreen(
                 errorTipoFalla = ValidacionesFalla.validarTipoFalla(tipoFalla)
                 errorEquipo = ValidacionesFalla.validarEquipo(equipo)
                 errorDescripcion = Validaciones.validarDescripcion(descripcion)
-                errorReportante = Validaciones.validarReportante(reportadaPor)
 
                 val formularioValido =
                     errorTipoFalla == null &&
-                    errorEquipo == null &&
-                    errorDescripcion == null &&
-                    errorReportante == null
+                            errorEquipo == null &&
+                            errorDescripcion == null
 
                 if (formularioValido) {
                     vibrarAlRegistrar(context)
                     onRegistrar(
                         tipoFalla.trim(),
                         descripcion.trim(),
-                        equipo.trim(),
-                        reportadaPor.trim()
+                        equipo.trim()
                     )
                 }
             },
