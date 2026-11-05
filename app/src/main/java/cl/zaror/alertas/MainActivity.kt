@@ -175,26 +175,32 @@ fun AlertasApp(
                     }
                 }
 
-                "Nueva" -> NuevaAlertaScreen { tipo, descripcion, ubicacion, reportadaPor, fotoUri ->
+                "Nueva" -> NuevaAlertaScreen(
+                    nombreUsuario = usuario.nombre
+                ) { tipo, descripcion, ubicacion, fotoUri ->
                     viewModel.guardarAlerta(
                         Alerta(
                             tipo = tipo,
                             descripcion = descripcion,
                             ubicacion = ubicacion,
-                            reportadaPor = reportadaPor,
+                            reportadaPor = usuario.nombre,
+                            usuarioId = usuario.id,
                             fotoUri = fotoUri
                         )
                     )
                     pantalla = "Alertas"
                 }
 
-                "Falla" -> ReporteFallaScreen { tipoFalla, descripcion, equipo, reportadaPor ->
+                "Falla" -> ReporteFallaScreen(
+                    nombreUsuario = usuario.nombre
+                ) { tipoFalla, descripcion, equipo ->
                     viewModel.guardarAlerta(
                         Alerta(
                             tipo = "Falla de alarma",
                             descripcion = "[$tipoFalla] $descripcion",
                             ubicacion = equipo,
-                            reportadaPor = reportadaPor
+                            reportadaPor = usuario.nombre,
+                            usuarioId = usuario.id
                         )
                     )
                     pantalla = "Alertas"
