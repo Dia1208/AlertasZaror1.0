@@ -22,20 +22,19 @@ import cl.zaror.alertas.ui.components.SelectorChips
 
 @Composable
 fun NuevaAlertaScreen(
-    onRegistrar: (String, String, String, String, String?) -> Unit
+    nombreUsuario: String,
+    onRegistrar: (String, String, String, String?) -> Unit
 ) {
     val context = LocalContext.current
 
     var tipo by remember { mutableStateOf("") }
     var descripcion by remember { mutableStateOf("") }
     var ubicacion by remember { mutableStateOf("") }
-    var reportadaPor by remember { mutableStateOf("") }
     var fotoUri by remember { mutableStateOf<String?>(null) }
 
     var errorTipo by remember { mutableStateOf<String?>(null) }
     var errorDescripcion by remember { mutableStateOf<String?>(null) }
     var errorUbicacion by remember { mutableStateOf<String?>(null) }
-    var errorReportante by remember { mutableStateOf<String?>(null) }
 
     val selectorFoto = rememberLauncherForActivityResult(
         ActivityResultContracts.GetContent()
@@ -98,12 +97,9 @@ fun NuevaAlertaScreen(
             Text("Probar vibración del dispositivo")
         }
 
-        CampoTexto(
-            valor = reportadaPor,
-            onCambio = { reportadaPor = it; errorReportante = null },
-            etiqueta = "Reportada por",
-            icono = Icons.Default.Person,
-            error = errorReportante
+        Text(
+            text = "Reportada por: $nombreUsuario",
+            style = MaterialTheme.typography.bodyLarge
         )
 
         OutlinedButton(
@@ -120,13 +116,11 @@ fun NuevaAlertaScreen(
                 errorTipo = Validaciones.validarTipo(tipo)
                 errorDescripcion = Validaciones.validarDescripcion(descripcion)
                 errorUbicacion = Validaciones.validarUbicacion(ubicacion)
-                errorReportante = Validaciones.validarReportante(reportadaPor)
 
                 val formularioValido =
                     errorTipo == null &&
-                    errorDescripcion == null &&
-                    errorUbicacion == null &&
-                    errorReportante == null
+                            errorDescripcion == null &&
+                            errorUbicacion == null
 
                 if (formularioValido) {
                     vibrarAlRegistrar(context)
@@ -134,7 +128,6 @@ fun NuevaAlertaScreen(
                         tipo.trim(),
                         descripcion.trim(),
                         ubicacion.trim(),
-                        reportadaPor.trim(),
                         fotoUri
                     )
                 }

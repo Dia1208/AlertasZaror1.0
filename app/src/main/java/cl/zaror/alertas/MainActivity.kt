@@ -175,13 +175,16 @@ fun AlertasApp(
                     }
                 }
 
-                "Nueva" -> NuevaAlertaScreen { tipo, descripcion, ubicacion, reportadaPor, fotoUri ->
+                "Nueva" -> NuevaAlertaScreen(
+                    nombreUsuario = usuario.nombre
+                ) { tipo, descripcion, ubicacion, fotoUri ->
                     viewModel.guardarAlerta(
                         Alerta(
                             tipo = tipo,
                             descripcion = descripcion,
                             ubicacion = ubicacion,
-                            reportadaPor = reportadaPor,
+                            reportadaPor = usuario.nombre,
+                            usuarioId = usuario.id,
                             fotoUri = fotoUri
                         )
                     )
