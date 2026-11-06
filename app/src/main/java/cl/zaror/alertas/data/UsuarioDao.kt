@@ -15,4 +15,16 @@ interface UsuarioDao {
 
     @Query("SELECT * FROM usuarios WHERE id = :id LIMIT 1")
     suspend fun buscarPorId(id: Int): UsuarioEntity?
+
+    @Query(
+        "UPDATE usuarios SET intentosFallidos = :intentos, bloqueadoHasta = :bloqueadoHasta " +
+                "WHERE id = :id"
+    )
+    suspend fun actualizarIntentos(id: Int, intentos: Int, bloqueadoHasta: Long)
+
+    @Query(
+        "UPDATE usuarios SET claveHash = :claveHash, sal = :sal, versionHash = :version " +
+                "WHERE id = :id"
+    )
+    suspend fun actualizarHash(id: Int, claveHash: String, sal: String, version: Int)
 }

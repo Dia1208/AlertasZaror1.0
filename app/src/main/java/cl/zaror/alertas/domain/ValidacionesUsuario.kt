@@ -33,10 +33,14 @@ object ValidacionesUsuario {
     }
 
     fun validarClave(clave: String): String? {
-        return if (clave.length < 6) {
-            "La contraseña debe tener al menos 6 caracteres"
-        } else {
-            null
+        return when {
+            clave.length < 8 ->
+                "La contraseña debe tener al menos 8 caracteres"
+
+            !clave.any { it.isLetter() } || !clave.any { it.isDigit() } ->
+                "La contraseña debe incluir letras y números"
+
+            else -> null
         }
     }
 

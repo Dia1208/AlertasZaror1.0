@@ -9,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [AlertaEntity::class, UsuarioEntity::class, ContactoEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -69,6 +69,22 @@ abstract class AppDatabase : RoomDatabase() {
             }
         }
 
+        // Seguridad de cuentas: version del hash e intentos de login. Las cuentas
+        // existentes quedan con hash version 1 y se actualizan al iniciar sesion.
+        private val MIGRACION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE `usuarios` ADD COLUMN `versionHash` INTEGER NOT NULL DEFAULT 1"
+                )
+                db.execSQL(
+                    "ALTER TABLE `usuarios` ADD COLUMN `intentosFallidos` INTEGER NOT NULL DEFAULT 0"
+                )
+                db.execSQL(
+                    "ALTER TABLE `usuarios` ADD COLUMN `bloqueadoHasta` INTEGER NOT NULL DEFAULT 0"
+                )
+            }
+        }
+
         fun obtener(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val nuevaBase = Room.databaseBuilder(
@@ -76,7 +92,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "alertas_zaror.db"
                 )
-                    .addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4)
+                    .addMigrations(MIGRACION_1_2, MIGRACION_2_3, MIGRACION_3_4, MIGRACION_4_5)
                     .build()
 
                 INSTANCE = nuevaBase
