@@ -51,9 +51,30 @@ class ValidacionesUsuarioTest {
     @Test
     fun claveCortaDebeMostrarError() {
         assertEquals(
-            "La contraseña debe tener al menos 6 caracteres",
-            ValidacionesUsuario.validarClave("abc12")
+            "La contraseña debe tener al menos 8 caracteres",
+            ValidacionesUsuario.validarClave("abc123")
         )
+    }
+
+    @Test
+    fun claveSinNumerosDebeMostrarError() {
+        assertEquals(
+            "La contraseña debe incluir letras y números",
+            ValidacionesUsuario.validarClave("abcdefgh")
+        )
+    }
+
+    @Test
+    fun claveSinLetrasDebeMostrarError() {
+        assertEquals(
+            "La contraseña debe incluir letras y números",
+            ValidacionesUsuario.validarClave("12345678")
+        )
+    }
+
+    @Test
+    fun claveValidaNoDebeTenerError() {
+        assertNull(ValidacionesUsuario.validarClave("abc12345"))
     }
 
     @Test

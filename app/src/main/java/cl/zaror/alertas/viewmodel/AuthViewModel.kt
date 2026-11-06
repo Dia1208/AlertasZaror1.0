@@ -2,6 +2,7 @@ package cl.zaror.alertas.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cl.zaror.alertas.data.ResultadoAuth
 import cl.zaror.alertas.data.SesionManager
 import cl.zaror.alertas.data.UsuariosRepository
 import cl.zaror.alertas.domain.AdminsFijos
@@ -95,11 +96,17 @@ class AuthViewModel(
             _procesando.value = true
             _error.value = null
 
-            val usuario = usuarios.autenticar(telefono, clave)
-            if (usuario == null) {
-                _error.value = "Teléfono o contraseña incorrectos"
-            } else {
-                sesion.iniciarSesion(usuario.id)
+            when (val resultado = usuarios.autenticar(telefono, clave)) {
+                is ResultadoAuth.Exito -> sesion.iniciarSesion(resultado.usuario.id)
+
+                ResultadoAuth.Invalidas ->
+                    _error.value = "Teléfono o contraseña incorrectos"
+
+                is ResultadoAuth.Bloqueado -> {
+                    val minutos = (resultado.segundos + 59) / 60
+                    _error.value =
+                        "Demasiados intentos fallidos. Intenta de nuevo en $minutos min"
+                }
             }
 
             _procesando.value = false
