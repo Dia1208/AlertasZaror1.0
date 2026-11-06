@@ -1,0 +1,18 @@
+target/
+.idea/
+*.iml
+HELP.md
+
+# Secretos y wallet de Oracle: nunca van a Git
+wallet/
+.env
+*.env
+application-local.properties
+application-local.yml
+cwallet.sso
+ewallet.p12
+ewallet.pem
+keystore.jks
+truststore.jks
+tnsnames.ora
+sqlnet.ora
