@@ -11,6 +11,9 @@ interface AlertaDao {
     @Query("SELECT * FROM alertas ORDER BY fechaHora DESC")
     fun observarTodas(): Flow<List<AlertaEntity>>
 
+    @Query("SELECT * FROM alertas WHERE usuarioId = :usuarioId ORDER BY fechaHora DESC")
+    fun observarDeUsuario(usuarioId: Int): Flow<List<AlertaEntity>>
+
     @Insert
     suspend fun insertar(alerta: AlertaEntity)
 
@@ -21,6 +24,13 @@ interface AlertaDao {
         id: Int,
         nuevoEstado: String
     )
+
+    /** Cancela solo si la alerta es del usuario y sigue activa. Devuelve filas afectadas. */
+    @Query(
+        "UPDATE alertas SET estado = 'Cancelada' " +
+                "WHERE id = :id AND usuarioId = :usuarioId AND estado = 'Activa'"
+    )
+    suspend fun cancelarPropia(id: Int, usuarioId: Int): Int
 
     @Query("DELETE FROM alertas WHERE id = :id")
     suspend fun eliminar(id: Int)
