@@ -21,6 +21,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import cl.zaror.alertas.data.*
+import cl.zaror.alertas.domain.Permisos
+import cl.zaror.alertas.domain.Rol
 import cl.zaror.alertas.ui.components.AlertaCard
 import cl.zaror.alertas.ui.screens.LoginScreen
 import cl.zaror.alertas.ui.screens.NuevaAlertaScreen
@@ -107,7 +109,9 @@ fun AlertasApp(
     onCerrarSesion: () -> Unit
 ) {
     var pantalla by remember { mutableStateOf("Inicio") }
-    val alertas by viewModel.alertas.collectAsState()
+    val alertasFlow = remember(usuario) { viewModel.alertasVisibles(usuario) }
+    val alertas by alertasFlow.collectAsState(initial = emptyList())
+    val esAdmin = usuario.rol == Rol.ADMINISTRADOR
     val activas = alertas.count { it.estado == "Activa" }
 
     val pestanas = listOf(
@@ -161,14 +165,23 @@ fun AlertasApp(
                         )
                     ) {
                         Column(Modifier.padding(16.dp)) {
-                            Text("Alertas activas: $activas", style = MaterialTheme.typography.titleMedium)
-                            Text("Total registradas: ${alertas.size}")
+                            Text(
+                                if (esAdmin) "Alertas activas: $activas" else "Mis alertas activas: $activas",
+                                style = MaterialTheme.typography.titleMedium
+                            )
+                            Text(
+                                if (esAdmin) "Total registradas: ${alertas.size}" else "Total mías: ${alertas.size}"
+                            )
                         }
                     }
                     Text(
                         "Sesión iniciada: ${usuario.nombre}",
                         style = MaterialTheme.typography.bodyLarge,
                         modifier = Modifier.padding(top = 24.dp)
+                    )
+                    Text(
+                        if (esAdmin) "Rol: Administrador" else "Rol: Vecino",
+                        style = MaterialTheme.typography.bodyMedium
                     )
                     TextButton(onClick = onCerrarSesion) {
                         Text("Cerrar sesión")
@@ -178,15 +191,12 @@ fun AlertasApp(
                 "Nueva" -> NuevaAlertaScreen(
                     nombreUsuario = usuario.nombre
                 ) { tipo, descripcion, ubicacion, fotoUri ->
-                    viewModel.guardarAlerta(
-                        Alerta(
-                            tipo = tipo,
-                            descripcion = descripcion,
-                            ubicacion = ubicacion,
-                            reportadaPor = usuario.nombre,
-                            usuarioId = usuario.id,
-                            fotoUri = fotoUri
-                        )
+                    viewModel.registrarAlerta(
+                        usuario = usuario,
+                        tipo = tipo,
+                        descripcion = descripcion,
+                        ubicacion = ubicacion,
+                        fotoUri = fotoUri
                     )
                     pantalla = "Alertas"
                 }
@@ -194,21 +204,22 @@ fun AlertasApp(
                 "Falla" -> ReporteFallaScreen(
                     nombreUsuario = usuario.nombre
                 ) { tipoFalla, descripcion, equipo ->
-                    viewModel.guardarAlerta(
-                        Alerta(
-                            tipo = "Falla de alarma",
-                            descripcion = "[$tipoFalla] $descripcion",
-                            ubicacion = equipo,
-                            reportadaPor = usuario.nombre,
-                            usuarioId = usuario.id
-                        )
+                    viewModel.registrarAlerta(
+                        usuario = usuario,
+                        tipo = "Falla de alarma",
+                        descripcion = "[$tipoFalla] $descripcion",
+                        ubicacion = equipo
                     )
                     pantalla = "Alertas"
                 }
 
                 "Alertas" -> if (alertas.isEmpty()) {
                     Text(
-                        "Aún no hay alertas. Usa «Activar alarma» para registrar una.",
+                        if (esAdmin) {
+                            "Aún no hay alertas registradas."
+                        } else {
+                            "Aún no tienes alertas. Usa «Activar alarma» para registrar una."
+                        },
                         modifier = Modifier.padding(24.dp)
                     )
                 } else {
@@ -219,8 +230,19 @@ fun AlertasApp(
                         items(alertas, key = { it.id }) { alerta ->
                             AlertaCard(
                                 alerta = alerta,
-                                onAtender = viewModel::marcarComoAtendida,
-                                onEliminar = viewModel::eliminarAlerta
+                                puedeAtender = Permisos.puedeMarcarAtendida(usuario.rol) &&
+                                        alerta.estado == Permisos.ESTADO_ACTIVA,
+                                puedeCancelar = Permisos.puedeCancelar(
+                                    rol = usuario.rol,
+                                    usuarioId = usuario.id,
+                                    duenoId = alerta.usuarioId,
+                                    estado = alerta.estado
+                                ),
+                                puedeEliminar = Permisos.puedeEliminar(usuario.rol),
+                                mostrarReportante = esAdmin,
+                                onAtender = { id -> viewModel.marcarComoAtendida(usuario, id) },
+                                onCancelar = { id -> viewModel.cancelarAlerta(usuario, id) },
+                                onEliminar = { id -> viewModel.eliminarAlerta(usuario, id) }
                             )
                         }
                     }

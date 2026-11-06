@@ -28,7 +28,12 @@ private fun iconoDeTipo(tipo: String): ImageVector = when (tipo) {
 @Composable
 fun AlertaCard(
     alerta: Alerta,
+    puedeAtender: Boolean,
+    puedeCancelar: Boolean,
+    puedeEliminar: Boolean,
+    mostrarReportante: Boolean,
     onAtender: (Int) -> Unit,
+    onCancelar: (Int) -> Unit,
     onEliminar: (Int) -> Unit
 ) {
     var mostrarDialogo by remember { mutableStateOf(false) }
@@ -71,7 +76,9 @@ fun AlertaCard(
 
             Text("Descripción: ${alerta.descripcion}", modifier = Modifier.padding(top = 8.dp))
             Text("Ubicación: ${alerta.ubicacion}")
-            Text("Reportada por: ${alerta.reportadaPor}")
+            if (mostrarReportante) {
+                Text("Reportada por: ${alerta.reportadaPor}")
+            }
 
             if (!alerta.fotoUri.isNullOrBlank()) {
                 AsyncImage(
@@ -83,21 +90,33 @@ fun AlertaCard(
                 )
             }
 
-            Row(
-                modifier = Modifier.padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (alerta.estado == "Activa") {
-                    Button(onClick = { onAtender(alerta.id) }) {
-                        Icon(Icons.Default.Check, null)
-                        Spacer(Modifier.width(6.dp))
-                        Text("Atendida")
+            val hayAcciones = puedeAtender || puedeCancelar || puedeEliminar
+            if (hayAcciones) {
+                Row(
+                    modifier = Modifier.padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (puedeAtender) {
+                        Button(onClick = { onAtender(alerta.id) }) {
+                            Icon(Icons.Default.Check, null)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Atendida")
+                        }
                     }
-                }
-                OutlinedButton(onClick = { mostrarDialogo = true }) {
-                    Icon(Icons.Default.Delete, null)
-                    Spacer(Modifier.width(6.dp))
-                    Text("Eliminar")
+                    if (puedeCancelar) {
+                        OutlinedButton(onClick = { onCancelar(alerta.id) }) {
+                            Icon(Icons.Default.Close, null)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Cancelar")
+                        }
+                    }
+                    if (puedeEliminar) {
+                        OutlinedButton(onClick = { mostrarDialogo = true }) {
+                            Icon(Icons.Default.Delete, null)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Eliminar")
+                        }
+                    }
                 }
             }
         }

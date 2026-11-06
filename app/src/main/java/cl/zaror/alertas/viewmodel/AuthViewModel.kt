@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cl.zaror.alertas.data.SesionManager
 import cl.zaror.alertas.data.UsuariosRepository
+import cl.zaror.alertas.domain.AdminsFijos
+import cl.zaror.alertas.domain.Rol
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +19,8 @@ data class UsuarioSesion(
     val id: Int,
     val nombre: String,
     val telefono: String,
-    val direccion: String
+    val direccion: String,
+    val rol: Rol
 )
 
 sealed interface EstadoSesion {
@@ -48,7 +51,8 @@ class AuthViewModel(
                             id = usuario.id,
                             nombre = usuario.nombre,
                             telefono = usuario.telefono,
-                            direccion = usuario.direccion
+                            direccion = usuario.direccion,
+                            rol = AdminsFijos.rolPara(usuario.telefono)
                         )
                     )
                 }
