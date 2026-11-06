@@ -24,6 +24,7 @@ import cl.zaror.alertas.data.*
 import cl.zaror.alertas.domain.Permisos
 import cl.zaror.alertas.domain.Rol
 import cl.zaror.alertas.ui.components.AlertaCard
+import cl.zaror.alertas.ui.screens.ContactosScreen
 import cl.zaror.alertas.ui.screens.LoginScreen
 import cl.zaror.alertas.ui.screens.NuevaAlertaScreen
 import cl.zaror.alertas.ui.screens.RegistroScreen
@@ -40,6 +41,10 @@ class MainActivity : ComponentActivity() {
         val factory = AlertasViewModelFactory(repository)
         val viewModel = ViewModelProvider(this, factory)[AlertasViewModel::class.java]
 
+        val contactosFactory = ContactosViewModelFactory(ContactosRepository(db.contactoDao()))
+        val contactosViewModel =
+            ViewModelProvider(this, contactosFactory)[ContactosViewModel::class.java]
+
         val authFactory = AuthViewModelFactory(
             UsuariosRepository(db.usuarioDao()),
             SesionManager(this)
@@ -48,7 +53,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             AlertasZaror10Theme {
-                AccesoApp(authViewModel, viewModel)
+                AccesoApp(authViewModel, viewModel, contactosViewModel)
             }
         }
     }
@@ -56,7 +61,11 @@ class MainActivity : ComponentActivity() {
 
 /** Decide qué mostrar según la sesión: carga, login/registro o la app. */
 @Composable
-fun AccesoApp(authViewModel: AuthViewModel, viewModel: AlertasViewModel) {
+fun AccesoApp(
+    authViewModel: AuthViewModel,
+    viewModel: AlertasViewModel,
+    contactosViewModel: ContactosViewModel
+) {
     val estado by authViewModel.estadoSesion.collectAsState()
     val error by authViewModel.error.collectAsState()
     val procesando by authViewModel.procesando.collectAsState()
@@ -96,6 +105,7 @@ fun AccesoApp(authViewModel: AuthViewModel, viewModel: AlertasViewModel) {
 
         is EstadoSesion.Activa -> AlertasApp(
             viewModel = viewModel,
+            contactosViewModel = contactosViewModel,
             usuario = sesion.usuario,
             onCerrarSesion = authViewModel::cerrarSesion
         )
@@ -105,12 +115,16 @@ fun AccesoApp(authViewModel: AuthViewModel, viewModel: AlertasViewModel) {
 @Composable
 fun AlertasApp(
     viewModel: AlertasViewModel,
+    contactosViewModel: ContactosViewModel,
     usuario: UsuarioSesion,
     onCerrarSesion: () -> Unit
 ) {
     var pantalla by remember { mutableStateOf("Inicio") }
     val alertasFlow = remember(usuario) { viewModel.alertasVisibles(usuario) }
     val alertas by alertasFlow.collectAsState(initial = emptyList())
+    val contactosFlow = remember(usuario) { contactosViewModel.contactos(usuario) }
+    val contactos by contactosFlow.collectAsState(initial = emptyList())
+    val errorContacto by contactosViewModel.error.collectAsState()
     val esAdmin = usuario.rol == Rol.ADMINISTRADOR
     val activas = alertas.count { it.estado == "Activa" }
 
@@ -118,7 +132,8 @@ fun AlertasApp(
         Triple("Inicio", "Inicio", Icons.Default.Home),
         Triple("Alertas", "Alertas", Icons.Default.Notifications),
         Triple("Nueva", "Nueva", Icons.Default.AddCircle),
-        Triple("Falla", "Falla", Icons.Default.Build)
+        Triple("Falla", "Falla", Icons.Default.Build),
+        Triple("Contactos", "Contactos", Icons.Default.Contacts)
     )
 
     Scaffold(
@@ -135,7 +150,7 @@ fun AlertasApp(
             }
         },
         floatingActionButton = {
-            if (pantalla != "Nueva" && pantalla != "Falla") {
+            if (pantalla != "Nueva" && pantalla != "Falla" && pantalla != "Contactos") {
                 BotonAlarma { pantalla = "Nueva" }
             }
         }
@@ -212,6 +227,16 @@ fun AlertasApp(
                     )
                     pantalla = "Alertas"
                 }
+
+                "Contactos" -> ContactosScreen(
+                    contactos = contactos,
+                    error = errorContacto,
+                    onAgregar = { nombre, telefono, alExito ->
+                        contactosViewModel.agregar(usuario, nombre, telefono, alExito)
+                    },
+                    onEliminar = { id -> contactosViewModel.eliminar(usuario, id) },
+                    onLimpiarError = contactosViewModel::limpiarError
+                )
 
                 "Alertas" -> if (alertas.isEmpty()) {
                     Text(
