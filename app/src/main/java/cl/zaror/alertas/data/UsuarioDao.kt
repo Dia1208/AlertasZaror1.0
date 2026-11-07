@@ -17,14 +17,33 @@ interface UsuarioDao {
     suspend fun buscarPorId(id: Int): UsuarioEntity?
 
     @Query(
+        "UPDATE usuarios SET nombre = :nombre, direccion = :direccion " +
+                "WHERE id = :id"
+    )
+    suspend fun actualizarPerfilLocal(
+        id: Int,
+        nombre: String,
+        direccion: String
+    )
+
+    @Query(
         "UPDATE usuarios SET intentosFallidos = :intentos, bloqueadoHasta = :bloqueadoHasta " +
                 "WHERE id = :id"
     )
-    suspend fun actualizarIntentos(id: Int, intentos: Int, bloqueadoHasta: Long)
+    suspend fun actualizarIntentos(
+        id: Int,
+        intentos: Int,
+        bloqueadoHasta: Long
+    )
 
     @Query(
         "UPDATE usuarios SET claveHash = :claveHash, sal = :sal, versionHash = :version " +
                 "WHERE id = :id"
     )
-    suspend fun actualizarHash(id: Int, claveHash: String, sal: String, version: Int)
+    suspend fun actualizarHash(
+        id: Int,
+        claveHash: String,
+        sal: String,
+        version: Int
+    )
 }
