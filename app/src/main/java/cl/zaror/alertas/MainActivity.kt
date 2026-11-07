@@ -9,6 +9,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -37,19 +39,33 @@ class MainActivity : ComponentActivity() {
         super.onCreate(state)
 
         val db = AppDatabase.obtener(this)
+
         val repository = AlertasRepository(db.alertaDao())
         val factory = AlertasViewModelFactory(repository)
         val viewModel = ViewModelProvider(this, factory)[AlertasViewModel::class.java]
 
-        val contactosFactory = ContactosViewModelFactory(ContactosRepository(db.contactoDao()))
-        val contactosViewModel =
-            ViewModelProvider(this, contactosFactory)[ContactosViewModel::class.java]
+        val contactosFactory = ContactosViewModelFactory(
+            ContactosRepository(db.contactoDao())
+        )
+        val contactosViewModel = ViewModelProvider(
+            this,
+            contactosFactory
+        )[ContactosViewModel::class.java]
+
+        val usuarioDao = db.usuarioDao()
+        val sesionManager = SesionManager(this)
 
         val authFactory = AuthViewModelFactory(
-            UsuariosRepository(db.usuarioDao()),
-            SesionManager(this)
+            UsuariosRepository(usuarioDao),
+            sesionManager,
+            usuarioDao,
+            cl.zaror.alertas.data.remote.RetrofitClient.authApi,
+            TokenManager(this)
         )
-        val authViewModel = ViewModelProvider(this, authFactory)[AuthViewModel::class.java]
+        val authViewModel = ViewModelProvider(
+            this,
+            authFactory
+        )[AuthViewModel::class.java]
 
         setContent {
             AlertasZaror10Theme {
@@ -162,47 +178,13 @@ fun AlertasApp(
             label = "AnimacionPantallas"
         ) { pantallaActual ->
             when (pantallaActual) {
-                "Inicio" -> Column(Modifier.padding(24.dp)) {
-                    Text("Alertas Zaror", style = MaterialTheme.typography.headlineMedium)
-                    Text(
-                        "Junta de Vecinos Población Zaror",
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
-                    Card(
-                        modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = if (activas > 0) {
-                                MaterialTheme.colorScheme.errorContainer
-                            } else {
-                                MaterialTheme.colorScheme.secondaryContainer
-                            }
-                        )
-                    ) {
-                        Column(Modifier.padding(16.dp)) {
-                            Text(
-                                if (esAdmin) "Alertas activas: $activas" else "Mis alertas activas: $activas",
-                                style = MaterialTheme.typography.titleMedium
-                            )
-                            Text(
-                                if (esAdmin) "Total registradas: ${alertas.size}" else "Total mías: ${alertas.size}"
-                            )
-                        }
-                    }
-                    Text(
-                        "Sesión iniciada: ${usuario.nombre}",
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(top = 24.dp)
-                    )
-                    Text(
-                        if (esAdmin) "Rol: Administrador" else "Rol: Vecino",
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    TextButton(onClick = onCerrarSesion) {
-                        Text("Cerrar sesión")
-                    }
-                }
-
+                "Inicio" -> PantallaInicio(
+                    usuario = usuario.nombre,
+                    esAdmin = esAdmin,
+                    activas = activas,
+                    total = alertas.size,
+                    onCerrarSesion = onCerrarSesion
+                )
                 "Nueva" -> NuevaAlertaScreen(
                     nombreUsuario = usuario.nombre
                 ) { tipo, descripcion, ubicacion, fotoUri ->
@@ -250,7 +232,12 @@ fun AlertasApp(
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxWidth(),
-                        contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 16.dp, bottom = 96.dp)
+                        contentPadding = PaddingValues(
+                            start = 16.dp,
+                            end = 16.dp,
+                            top = 16.dp,
+                            bottom = 96.dp
+                        )
                     ) {
                         items(alertas, key = { it.id }) { alerta ->
                             AlertaCard(
@@ -277,7 +264,173 @@ fun AlertasApp(
     }
 }
 
-/** Boton con animacion de pulso infinita para llamar la atencion. */
+/** Botón con animación de pulso infinita para llamar la atención. */
+@Composable
+private fun PantallaInicio(
+    usuario: String,
+    esAdmin: Boolean,
+    activas: Int,
+    total: Int,
+    onCerrarSesion: () -> Unit
+) {
+    var visible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        visible = true
+    }
+
+    val entrada by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = tween(durationMillis = 750),
+        label = "entradaInicio"
+    )
+
+    val contador by animateIntAsState(
+        targetValue = activas,
+        animationSpec = tween(durationMillis = 650),
+        label = "contadorAlertas"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .graphicsLayer {
+                alpha = entrada
+                translationY = (1f - entrada) * 28f
+            }
+            .padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            Surface(
+                shape = MaterialTheme.shapes.large,
+                color = MaterialTheme.colorScheme.primaryContainer
+            ) {
+                Icon(
+                    Icons.Default.NotificationsActive,
+                    contentDescription = null,
+                    modifier = Modifier.padding(15.dp).size(34.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
+
+            Column {
+                Text(
+                    "Alertas Zaror",
+                    style = MaterialTheme.typography.headlineMedium
+                )
+                Text(
+                    "Junta de Vecinos Población Zaror",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = if (activas > 0) {
+                    MaterialTheme.colorScheme.errorContainer
+                } else {
+                    MaterialTheme.colorScheme.primaryContainer
+                }
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(22.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Notifications,
+                        contentDescription = null,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        if (activas > 0) "Atención: hay alertas activas"
+                        else "Estado de las alertas",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                }
+
+                Text(
+                    contador.toString(),
+                    style = MaterialTheme.typography.displayLarge
+                )
+
+                Text(
+                    if (esAdmin) "Alertas activas en la comunidad"
+                    else "Alertas activas registradas por ti",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.15f)
+                )
+
+                Text(
+                    if (esAdmin) "Total registradas: $total"
+                    else "Total de mis alertas: $total",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        }
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        ) {
+            Row(
+                modifier = Modifier.padding(18.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.AccountCircle,
+                    contentDescription = null,
+                    modifier = Modifier.size(42.dp),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+
+                Spacer(Modifier.width(14.dp))
+
+                Column {
+                    Text(
+                        "¡Bienvenido!",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        usuario,
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                    Text(
+                        if (esAdmin) "Administrador" else "Vecino",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        TextButton(
+            onClick = onCerrarSesion,
+            modifier = Modifier.align(Alignment.End)
+        ) {
+            Icon(Icons.Default.Logout, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("Cerrar sesión")
+        }
+    }
+}
 @Composable
 private fun BotonAlarma(onClick: () -> Unit) {
     val transicion = rememberInfiniteTransition(label = "pulso")
